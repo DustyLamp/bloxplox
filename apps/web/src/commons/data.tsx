@@ -1,0 +1,64 @@
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { defaultSettings, documentSchema, editDocument, entities, type DataByKind, type Document, type Kind } from '../../../../packages/domain/src/index';
+import { openDatabase, startSync, wireDocument, writeRecord, type Database, type SyncStatus } from '../../../../packages/sync/src/index';
+import type { AuthService } from '../domain/auth';
+
+interface DataContextValue {
+  docs: Document[]; status: SyncStatus; save: <K extends Kind>(id: string, kind: K, data: Partial<DataByKind[K]>, deleted?: boolean) => Promise<void>;
+  sync: () => void; signOut: () => Promise<void>; email: string; error: string; clearError: () => void;
+}
+const Context = createContext<DataContextValue | null>(null);
+export const useData = () => { const value = useContext(Context); if (!value) throw new Error('Database unavailable'); return value; };
+
+export function DataProvider({ auth, identity, onSignOut, children }: { auth: AuthService; identity: { subject: string; email: string }; onSignOut: () => void; children: ReactNode }) {
+  const [docs, setDocs] = useState<Document[]>([]), [status, setStatus] = useState<SyncStatus>('syncing');
+  const [session, setSession] = useState<{ db: Database; sync?: ReturnType<typeof startSync> }>(), [error, setError] = useState('');
+  useEffect(() => {
+    let cancelled = false, dispose: (() => Promise<void>) | undefined;
+    void (async () => {
+      const db = await openDatabase(`${auth.config.userPoolId}:${identity.subject}`);
+      if (cancelled) { await db.close(); return; }
+      const subscription = db.records.find().$.subscribe(rows => setDocs(rows.map(row => wireDocument(row.toJSON()))));
+      const sync = auth.config.apiUrl ? startSync(db, { ...auth.config, subject: identity.subject, token: force => auth.token(force) }, setStatus) : undefined;
+      dispose = async () => { subscription.unsubscribe(); await sync?.close(); await db.close(); };
+      setSession({ db, sync });
+      if (!sync) setStatus('offline');
+      // Stable defaults safely coalesce if two newly signed-in devices initialize together.
+      const defaults = [
+        ['personal', 'Personal', '#ff9b57'], ['work', 'Work', '#70b4ff'], ['learning', 'Learning', '#b48aff'],
+        ['movement', 'Movement', '#c5ef51'], ['reading', 'Reading', '#ffe35c'], ['family', 'Family', '#ff86ac'],
+      ];
+      for (const [id, name, color] of defaults) {
+        if (await db.records.findOne(`category:${id}`).exec()) continue;
+        const next = editDocument(undefined, `category:${id}`, 'category', { name, color }, 'bootstrap');
+        next.revision = `bootstrap-${id}`;
+        try { await db.records.insert(documentSchema.parse(next)); } catch { /* Another tab initialized it. */ }
+      }
+    })().catch(err => setError(err instanceof Error ? err.message : 'Could not open local storage'));
+    return () => { cancelled = true; void dispose?.(); };
+  }, [auth, identity.subject]);
+  const save: DataContextValue['save'] = async (id, kind, data, deleted) => {
+    if (!session) throw new Error('Still opening storage');
+    try { await writeRecord(session.db, id, kind, data, deleted); }
+    catch (err) { const message = err instanceof Error ? err.message : 'Could not save'; setError(message); throw err; }
+  };
+  const signOut = async () => {
+    await session?.sync?.close();
+    auth.signOut(); onSignOut();
+  };
+  useEffect(() => {
+    const channel = new BroadcastChannel('bloxplox-auth');
+    channel.onmessage = event => { if (event.data === 'signed-out') { void session?.sync?.close(); onSignOut(); } };
+    return () => channel.close();
+  }, [session, onSignOut]);
+  if (!session) return <main className="loading" role="status">{error || 'Opening BloxPlox…'}</main>;
+  return <Context.Provider value={{ docs, status, save, sync: () => session.sync?.resync(), signOut, email: identity.email, error, clearError: () => setError('') }}>{children}</Context.Provider>;
+}
+export function useSettings() {
+  const { docs, save } = useData();
+  const settings = entities(docs, 'settings').find(s => s.id === 'settings') ?? defaultSettings();
+  return { settings, saveSettings: (patch: Partial<DataByKind['settings']>) => {
+    const { layout, timezone, dayStart, autoBacklog } = settings;
+    return save('settings', 'settings', { layout, timezone, dayStart, autoBacklog, ...patch });
+  } };
+}

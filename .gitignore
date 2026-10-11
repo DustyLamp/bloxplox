@@ -8,3 +8,6 @@ test-results/
 cdk.out/
 .DS_Store
 *.log
+*.zip
+playwright-report/
+config.local.json
