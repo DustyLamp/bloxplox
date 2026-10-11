@@ -1,82 +1,54 @@
 # BloxPlox
 
-Daily blocks and habit tracking, with a shared history and one Grid/List setting.
+Daily blocks and habit tracking with shared completion history. The React application lives in `apps/web`; the approved design remains runnable in `apps/prototype`.
 
-This repository contains the interactive prototype approved during the design conversation, its sample data and assets, browser checks, and the implementation handoff. **It is a prototype: edits are held in memory and reset on reload.** The React application, AWS infrastructure, authentication, and synchronization have not been implemented or deployed.
+## Development
 
-![Blocks prototype](design/screenshots/standalone-desktop.png)
-
-## Run locally
-
-Use Node.js 22 or newer and Yarn 4.18.1. Yarn is configured with `nodeLinker: node-modules`.
+Use Node 22 (see `.nvmrc`) and Yarn 4.18.1 with `nodeLinker: node-modules`.
 
 ```sh
 corepack enable
 yarn install --immutable
-yarn dev
+VITE_LOCAL_TEST=true yarn dev
 ```
 
-Open <http://127.0.0.1:4173>. If Corepack is not supplied by your Node installation, install Corepack or Yarn 4 first. Set `PORT` to use a different port.
-
-You can also open `apps/prototype/index.html` directly in a modern browser. Fonts and icons are bundled locally; the prototype makes no backend requests. The sample day is fixed at **11 October 2026** for repeatable review.
-
-The **Mockup** selector opens the different screens. **Blocks** and **Tracker** switch between the two main views; **Grid/List** applies to both. Swipe right to complete, left to mark not done, or repeat the same direction to clear. Press and hold a block to move it; on desktop, a grip appears on hover/focus. Tap a block for its settings and actions.
-
-## Repository layout
-
-```text
-apps/prototype/         Standalone HTML, CSS and JavaScript prototype
-  assets/fonts/         Poppins 500, 600 and 700
-  assets/vendor/        Pinned Lucide browser bundle and license
-design/archive/        Exact original concept fragments (v1 and final v2)
-design/screenshots/    Selected design review captures
-docs/product.md        Accepted behaviour and interaction details
-docs/architecture.md   Requested production architecture; pending decisions
-docs/handoff.md        What exists, limitations, references and next steps
-samples/               Export of the initial sample state
-scripts/               Local server, static build and browser-test runner
-tests/                 Portable Playwright interaction checks
-licenses/              Third-party asset notices
-```
-
-`apps/prototype` is the runnable source. Archived fragments preserve the original Codex artifacts and may need a host-provided icon runtime; use the standalone prototype for review. The current code is deliberately kept as the working HTML/CSS/JavaScript prototype, ready to port to the exact React stack once `omni-studio` is located.
-
-## Check and build
+Open http://127.0.0.1:5174. Local test mode uses a persistent, isolated browser database without AWS. It is a development-only Vite flag and is never included in deployment builds. To develop against AWS, copy the deployed `/config.json` to `apps/web/public/config.json` (ignored) and run `yarn dev` without the flag.
 
 ```sh
-yarn test:install
+yarn typecheck
 yarn test
+yarn test:install
+yarn test:e2e
 yarn build
+yarn synth
 ```
 
-Tests start a temporary localhost server and run Chromium. They cover swipe directions and clearing, completion/history aggregation, linking, recurrence, resizing, mouse/touch/keyboard rearrangement, history scrolling, and responsive screens. Screenshots are written to ignored `test-results/`. An existing Chromium binary can be selected with `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
+`yarn dev:prototype` opens the original prototype on port 4173; `yarn test:prototype` runs its original interaction checks. An existing Chromium binary can be selected with `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
 
-`yarn build` copies the standalone prototype to `dist/`. This is a static review build, not an AWS deployment. `yarn samples:export` refreshes `samples/initial-state.json` from the literals in `app.js`.
+## Structure
 
-## Production direction
+| Path | Purpose |
+| --- | --- |
+| `apps/web` | React UI, authentication and application actions |
+| `packages/domain` | Validated records, calendar rules, schedule and conflict resolution |
+| `packages/sync` | RxDB/Dexie persistence and authenticated replication |
+| `services/functions` | HTTP synchronization, WebSocket sessions and Streams notifications |
+| `infrastructure` | TypeScript CDK application, hosting and deployment pipeline |
+| `tests/production` | Production application browser checks |
+| `apps/prototype`, `design`, `samples` | Approved visual reference and synthetic sample data |
 
-- React using the same stack as `omni-studio`.
-- TypeScript Lambda functions, API Gateway HTTP and WebSocket APIs.
-- RxDB local persistence and replication; DynamoDB as the server datastore.
-- DynamoDB Streams trigger updates to connected clients.
-- Cognito authentication and per-user data isolation.
-- AWS Amplify Hosting, with backend and hosting infrastructure defined in TypeScript CDK.
-- Existing Route53 zone; exact domain, AWS account/profile and region still to be supplied.
+## Deployment
 
-See [architecture](docs/architecture.md) and [handoff](docs/handoff.md) for the detailed implementation plan and verified reference revision. No AWS resources have been created by this handoff.
+Destination: **https://bloxplox.com**, account `807550663091`, region `eu-north-1`, local AWS profile `bloxplox`. Public account creation requires email verification.
 
-## Continue on the MacBook Pro
+The `bloxplox-production` CodePipeline watches `main`, tests the application, synthesizes and updates itself, deploys the backend, then publishes a matching build and runtime configuration to Amplify. Merge to `main` to deploy. No manual pipeline approval is required.
 
-The intended working directory is `~/Orgs/BloxPlox`:
+The first pipeline deployment requires the account to be bootstrapped and a GitHub source token in Secrets Manager at `bloxplox/github-token`. Never put the token in source or CDK context.
 
 ```sh
-mkdir -p ~/Orgs
-git clone git@github.com:DustyLamp/bloxplox.git ~/Orgs/BloxPlox
-cd ~/Orgs/BloxPlox
-yarn install --immutable
-yarn dev
+AWS_PROFILE=bloxplox yarn cdk deploy BloxPloxPipeline --require-approval never
 ```
 
-Use the HTTPS clone URL if SSH is not configured. This initial handoff was assembled in a temporary checkout on the Mac mini.
+See [architecture](docs/architecture.md), [product behaviour](docs/product.md), and the [implementation and verification log](docs/implementation.md). [Handoff notes](docs/handoff.md) distinguish the retained prototype from the production source.
 
-See [third-party notices](licenses/README.md) for asset attribution. No license has yet been selected for the BloxPlox application source.
+Poppins and Lucide assets are bundled locally; see [third-party notices](licenses/README.md). No application source license has been selected.

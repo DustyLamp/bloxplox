@@ -1,73 +1,47 @@
-# Production architecture — requested, not implemented
+# Production architecture
 
-## Required stack
-
-| Layer | Requirement |
-| --- | --- |
-| Frontend | React and the exact `omni-studio` stack; source location pending |
-| Local data | RxDB, persisted in the browser |
-| Backend | TypeScript Lambda functions |
-| APIs | API Gateway HTTP for pull/push; WebSockets for live change notifications |
-| Server data | DynamoDB |
-| Change delivery | DynamoDB Streams → Lambda → authenticated WebSocket clients |
-| Authentication | Cognito; sign-up audience pending |
-| Hosting | AWS Amplify Hosting |
-| Infrastructure | TypeScript AWS CDK, including backend and Amplify resources |
-| DNS | Existing Route53 zone; exact domain and account to be confirmed |
-| Tooling | Yarn with `nodeLinker: node-modules` |
+React 19, TypeScript, Vite, TanStack Router, Tailwind, Lucide, Zod, RxDB 17.6 and Dexie. Yarn uses `node-modules`. The exact lockfile is used in local, GitHub and CodeBuild builds. The frontend and replication conventions were checked against the requested current reference sources; no private implementation is vendored.
 
 ```mermaid
 flowchart LR
-  UI[React on Amplify] <--> Local[RxDB browser storage]
+  UI[React on Amplify] <--> Local[RxDB / IndexedDB]
   UI --> Auth[Cognito]
-  Local <-->|Authenticated pull / push| API[API Gateway HTTP]
-  API <--> Functions[TypeScript Lambdas]
-  Functions <--> DB[DynamoDB]
+  Local <-->|JWT pull / push| API[HTTP API + Lambda]
+  API <--> DB[DynamoDB]
   DB --> Stream[DynamoDB Streams]
-  Stream --> Fanout[Change notification Lambda]
-  Fanout --> WS[API Gateway WebSocket]
-  WS -->|Notify / resume pull| Local
+  Stream --> Fanout[Notification Lambda]
+  Fanout --> WS[WebSocket API]
+  WS -->|Pull signal| Local
 ```
 
-## Reference inspected
+## Ownership and storage
 
-`inside-labs/omni-domain-replication`, latest fetched `main` on 2026-10-11:
+Cognito subjects own separate DynamoDB partitions and separate hashed RxDB database names. The server verifies an access token and derives ownership; requests cannot name a user or partition. Password sign-in uses Cognito SRP. Signup, code verification/resend, forgotten password, session refresh and sign-out are implemented.
 
-- Commit: [`2afbc075a0e7f700c56fa1541207cfe9cc2e0670`](https://github.com/inside-labs/omni-domain-replication/commit/2afbc075a0e7f700c56fa1541207cfe9cc2e0670) (2026-09-24).
-- Client package version: `@inside-labs/replication-client` 0.0.26, using RxDB `^17.1.0`, RxJS, and Dexie.
-- `replication.ts` uses `replicateRxCollection` with pull checkpoints, push batches, conflict responses, and a live stream.
-- `websocket.ts` sends heartbeats, retries with backoff, and emits `RESYNC` after reconnect/change notifications.
-- The latest source includes Cognito access-token verification and partition-aware connection authentication. Some README notes still describe an older unauthenticated proof of concept; review the actual code when implementing.
+A conditional DynamoDB transaction writes a document, increments its owner's sequence, and appends an immutable change entry. Strongly consistent pull queries consume this sequence, deduplicate a batch, and return a durable checkpoint. Changes and tombstones are retained, so a long-offline client can catch up. PITR and deletion protection protect application data. The connection table has TTL.
 
-The private reference repository and its internal package sources are not vendored in this public repository. Use it as an architectural reference in an authorized development environment.
+Push carries proposed and assumed master documents. A stale revision returns the master. The RxDB conflict handler merges independent fields using logical clocks and stable device IDs. Timing, recurrence and completion are atomic fields. Concurrent same-field writes converge deterministically; there is no device wall-clock dependency. Explicit deletion wins over an ordinary edit; Undo makes a later restoration. Forms write only fields changed since they opened.
 
-## Sync requirements to implement and verify
+## Notifications and recovery
 
-1. Writes succeed locally and queue for replication while offline.
-2. Authenticate HTTP and WebSocket access with Cognito; derive data ownership server-side. Never trust a client-supplied user partition.
-3. Use durable, ordered pull checkpoints and tombstones so offline devices catch up correctly. Test ordering, pagination, retries, deletions, and duplicate stream events.
-4. Make push conflicts explicit and protect concurrent updates with conditional writes. Choose a documented policy for edits to the same block on different devices; reference timestamp-based conflict handling requires review for personal schedules.
-5. WebSockets notify clients to pull; persistent DynamoDB data provides recovery when a connection or stream notification is lost.
-6. Reconnect with a fresh authentication token, heartbeat while open, and pull from the persisted checkpoint on resume. API Gateway has a two-hour connection limit and ten-minute idle timeout ([AWS quotas](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-execution-service-websocket-limits-table.html)).
-7. Keep scheduled occurrences stable across clients, preserve per-occurrence exceptions, and use a single logical result for linked habits/blocks. Store the user's timezone and apply local-time recurrence rules across daylight-saving changes.
-8. Version RxDB schemas and migrate them without wiping unsynced user edits. Verify sign-out and account switching isolate local data.
+An authenticated HTTP request issues a single-use, 60-second WebSocket ticket. Only its hash is stored. A connection has the same expiry as its access token; heartbeats enforce expiry. Streams notify only the owning user's connections. Notifications contain no application data.
 
-## Suggested production directory layout
+The client pulls on connection, notification, focus, online transition, and every minute as a recovery path. It sends heartbeats, closes stale sockets, retries with bounded exponential backoff, and obtains fresh authentication on reconnect. Push/pull retries survive unavailable networks. Sign-out aborts requests, closes sockets/subscriptions, and closes the local database. Unsent changes remain in that account's database for its next sign-in.
 
-```text
-apps/web/              React application after matching omni-studio
-packages/domain/       Shared schemas, recurrence and schedule behaviour
-packages/sync/         RxDB client adapter and shared sync contracts
-services/functions/   TypeScript Lambda entry points
-infrastructure/       TypeScript CDK application and stacks
-```
+## Calendar and history
 
-These directories are proposed, not empty placeholder implementations. The prototype remains in `apps/prototype/` until ported.
+This is a calendar planner: dates and times are local wall-clock values, not UTC appointments. The global schedule timezone determines Today, rollover and reminder times. Changing timezone keeps blocks at their clock time. A recurrence stores its creation timezone as provenance; daylight-saving changes never skip or duplicate its calendar date. Overnight work uses one block per date, ending at midnight where needed.
 
-## Versions and deployment decisions
+A series has stable occurrence IDs even when its rule is versioned. Editing a recurrence from a later day ends the earlier version and starts a new version, retaining the original interval anchor. Saved, moved, backlogged and deleted exceptions suppress generation. Viewing a day writes nothing. Completion freezes scheduled instances so history retains their duration/categories. Linked habits and blocks use one result identity.
 
-Registry versions checked on 2026-10-11: `aws-cdk-lib` 2.273.0, CDK CLI `aws-cdk` 2.1145.0, RxDB 17.6.0. Recheck stable releases when implementing CDK; library and CLI version numbers differ. These are planning notes, not installed production dependencies.
+History derives from actual records. Category time divides a completed block's duration equally across its categories. Deactivated habits retain recorded results; unrecorded dates follow the current habit weekday settings. Numeric values, explicit not-done and skip are separate states.
 
-Still needed: AWS account/profile and region, exact production hostname/hosted zone, `omni-studio` location, and invite-only versus public signup. Cognito sign-in details are delegated to the implementation; email sign-in is the suggested initial flow. GitHub/Amplify integration and runtime configuration should be provisioned without checking credentials into the repository.
+## Delivery and operation
 
-No CDK stacks, Cognito pools, DynamoDB tables, API deployments, Amplify apps, or Route53 changes have been created.
+The CDK pipeline uses a GitHub source secret, CodeBuild tests and synthesis, a production stage, and a post-deployment Amplify publish step. It is self-mutating. The app stack defines Cognito, DynamoDB, Lambda, HTTP/WebSocket APIs, Streams handling, a dead-letter queue/alarm, Amplify hosting, and the Route53-managed custom-domain association. HTTP and WebSocket stages have throttles. CSP restricts network/script origins; fonts are local.
+
+The generated service worker caches the application shell and runtime configuration, never authenticated API responses. After the first online load, an already signed-in account can reopen and edit offline. A waiting update activates when the old app tabs close. Browser data clearing removes unsent changes; Export data is available in Settings.
+
+Pinned CDK versions (registry checked 2026-10-11): library 2.273.0 and CLI 2.1145.0. The different version numbers are intentional. Schema version 0 is the initial production schema; future data changes must add RxDB migrations without resetting local storage.
+
+Open-app reminders are supported; closed-app push/email reminders are not scheduled. DynamoDB change-log retention is currently indefinite. Monitor table growth and notification dead letters before introducing retention or compaction.
