@@ -3,19 +3,20 @@ import { blockResultId, canonical, changedFields, completionWithStatus, dayBlock
 
 export function useActions() {
   const { docs, save } = useData();
-  async function saveBlock(block: Block, deleted = false, baseline?: Block) {
+  async function saveBlock(block: Block, deleted?: boolean, baseline?: Block) {
     const { id, ...data } = block;
     const existing = docs.find(d => d.id === id);
+    if (existing?.deleted && deleted === undefined) throw new Error('This block was deleted on another device.');
     const changes = existing ? changedFields(baseline ?? existing.data, data) : data;
     await save(id, 'block', changes, deleted);
   }
   async function place(block: Block, policy: 'push' | 'free' = 'push', baseline?: Block) {
-    if (!block.timing.date) return saveBlock(block, false, baseline);
+    if (!block.timing.date) return saveBlock(block, undefined, baseline);
     const proposed = insertBlock(dayBlocks(docs, block.timing.date), block, policy);
     if (!proposed) throw new Error('Would extend past midnight. Choose another time or add to backlog.');
     for (const item of proposed) {
       const existing = dayBlocks(docs, block.timing.date).find(b => b.id === item.id);
-      if (item.id === block.id || !existing || canonical(item) !== canonical(existing)) await saveBlock(item, false, item.id === block.id ? baseline : undefined);
+      if (item.id === block.id || !existing || canonical(item) !== canonical(existing)) await saveBlock(item, undefined, item.id === block.id ? baseline : undefined);
     }
   }
   async function complete(subjectId: string, date: string, completion: Completion) {

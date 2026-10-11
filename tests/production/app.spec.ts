@@ -8,6 +8,28 @@ async function addBlock(page: Page, name = 'Read', start = '08:00') {
   await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 async function menu(page: Page, name: string) { await page.getByRole('button', { name: 'Menu', exact: true }).click(); await page.getByRole('navigation', { name: 'Main menu' }).getByRole('button', { name, exact: true }).click(); }
+test('open forms refresh untouched fields, preserve edits and do not resurrect a remotely deleted block', async ({ page, context }) => {
+  await open(page); await addBlock(page, 'Shared');
+  const other = await context.newPage(); await open(other);
+  await page.getByRole('button', { name: '08:00 Shared 30m', exact: true }).click();
+  await page.getByLabel('Name', { exact: true }).fill('My edit');
+  await page.getByText('Settings', { exact: true }).click();
+  await other.getByRole('button', { name: '08:00 Shared 30m', exact: true }).click();
+  await other.getByText('Settings', { exact: true }).click(); await other.getByLabel('Notes', { exact: true }).fill('Arrived while open');
+  await other.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('Arrived while open');
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('My edit');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await other.getByRole('button', { name: '08:00 My edit 30m', exact: true }).click();
+  await page.getByRole('button', { name: '08:00 My edit 30m', exact: true }).click();
+  await other.getByRole('button', { name: 'Delete this block', exact: true }).click();
+  await expect(other.getByRole('button', { name: '08:00 My edit 30m', exact: true })).toHaveCount(0);
+  await page.getByLabel('Name', { exact: true }).fill('Stale edit');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText('deleted on another device');
+  await page.getByRole('button', { name: 'Close', exact: true }).click(); await page.reload();
+  await expect(page.getByText('Stale edit', { exact: true })).toHaveCount(0);
+});
 test('blocks persist across reload and a second tab, completion is immediate', async ({ page, context }) => {
   await open(page); await addBlock(page);
   await page.getByRole('button', { name: '08:00 Read 30m', exact: true }).click();
