@@ -58,6 +58,8 @@ Production checks on 2026-10-12 (Europe/Zurich):
 - Sign-out/account switching isolated browser data. No browser runtime errors were observed.
 - The original prototype's seven interaction suites passed. Production domain tests cover calendar/DST/month-end rules, occurrence identity, shared results, conflict resolution, scheduling and Things. Production browser tests exercise desktop and touch layouts, swipes, resize, rearrangement, history, numeric results, offline persistence and one-off task sessions.
 - Amplify's custom-domain association is available. Both the root hostname and `www` return HTTPS 200 with the application and configured security headers.
+- The merge of PR #2 (`307c1a0`) triggered CodePipeline execution `a5ac4c80-8887-4a22-831c-ad9e44f30228`, which succeeded through source, tests/synthesis, self-mutation, backend deployment and Amplify job 2. The initially missing deployment-resource permission is now expressed in CDK and verified through automatic deployment.
+- With Things added: 18 domain tests and 25 production browser checks passed; the mobile-only skip is the desktop keyboard-grip check, with touch rearrangement covered separately. The 352 px navigation was inspected in the browser and adjusted to keep all three tabs, the menu, date and layout controls visible.
 
 The live test creates two disposable accounts and cleans their application partitions and users in `finally`. It never uses or deletes the owner's account. Run explicitly against the deployed application with an AWS profile authorized to create/remove test users and read/delete their DynamoDB partitions:
 
