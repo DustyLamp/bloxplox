@@ -2,7 +2,7 @@
   "name": "bloxplox",
   "version": "0.1.0",
   "private": true,
-  "description": "Daily blocks and habit tracking",
+  "description": "Daily blocks, recurring habits and one-off things",
   "packageManager": "yarn@4.18.1",
   "engines": {
     "node": ">=22"
