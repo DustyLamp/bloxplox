@@ -19,6 +19,7 @@ export function useActions() {
     }
   }
   async function complete(subjectId: string, date: string, completion: Completion) {
+    for (const block of dayBlocks(docs, date).filter(b => b.habitId === subjectId && b.ruleId && !docs.some(d => d.id === b.id))) await saveBlock(block);
     await save(resultId(subjectId, date), 'result', { subjectId, date, completion });
   }
   async function completeBlock(block: Block, status: Completion['status']) {
@@ -31,7 +32,7 @@ export function useActions() {
     const old = getCompletion(docs, blockResultId(block));
     await saveBlock({ ...block, habitId });
     const subject = habitId ?? block.id;
-    if (old.status !== 'none') await complete(subject, block.resultDate, old);
+    if (old.status !== 'none' && getCompletion(docs, resultId(subject, block.resultDate)).status === 'none') await complete(subject, block.resultDate, old);
   }
   return { saveBlock, place, complete, completeBlock, link, save };
 }

@@ -12,7 +12,7 @@ import { Button, DebossFilter, Dialog, Field, IconButton, Logo } from './compone
 
 type Modal = { type: 'block' | 'move'; block: Block } | { type: 'habit' | 'habit-menu' | 'value'; habit?: Habit } | { type: 'rule'; habit?: Habit; block?: Block; rule?: Rule } | { type: 'calendar' } | null;
 export function App() {
-  const { docs, status, sync, error, clearError } = useData(), { settings, saveSettings } = useSettings(), actions = useActions();
+  const { docs, status, sync, signOut, error, clearError } = useData(), { settings, saveSettings } = useSettings(), actions = useActions();
   const navigate = useNavigate(), path = useRouterState({ select: s => s.location.pathname });
   const page = path.slice(1) || 'blocks', [date, setDate] = useState(() => localDate(settings.timezone));
   const [menu, setMenu] = useState(false), [modal, setModal] = useState<Modal>(null), [notice, setNotice] = useState(''), [undo, setUndo] = useState<Block | null>(null), [statsHabit, setStatsHabit] = useState<Habit>();
@@ -55,7 +55,7 @@ export function App() {
     <IconButton label="Menu" className="bp2-menutoggle" aria-expanded={menu} onClick={() => setMenu(!menu)}><Menu/></IconButton>
     {menu && <nav className="bp2-menu" aria-label="Main menu">{['backlog', 'habits', 'categories', 'history', 'settings'].map(item => <button key={item} onClick={() => { if (item === 'history') setStatsHabit(undefined); go(item); }}>{item[0].toUpperCase() + item.slice(1)}</button>)}</nav>}
   </header>
-  <div className={`sync-line sync-${status}`} role="status"><span className="sync-dot"/>{({ offline: 'Offline · saved on this device', syncing: 'Syncing', synced: 'Synced', retrying: 'Saved on this device · retrying sync', 'sign-in': 'Saved on this device · sign in to sync' })[status]}{['retrying', 'sign-in'].includes(status) && <button onClick={sync} aria-label="Retry sync"><RefreshCw size={13}/></button>}</div>
+  <div className={`sync-line sync-${status}`} role="status"><span className="sync-dot"/>{({ offline: 'Offline · saved on this device', syncing: 'Syncing', synced: 'Synced', retrying: 'Saved on this device · retrying sync', 'sign-in': 'Saved on this device · sign in to sync' })[status]}{status === 'retrying' && <button onClick={sync} aria-label="Retry sync"><RefreshCw size={13}/></button>}{status === 'sign-in' && <button onClick={() => run(signOut())}>Sign in</button>}</div>
   <main className="bp2-main">
     {['blocks', 'tracker'].includes(page) && <History date={date} onDate={setDate} manage={page === 'tracker' ? () => go('habits') : undefined}/>}
     {page === 'blocks' && <Blocks date={date} edit={block => setModal({ type: 'block', block })} add={start => setModal({ type: 'block', block: blankBlock(date, start ?? settings.dayStart) })} movePicker={block => setModal({ type: 'move', block })} report={report}/>}

@@ -15,7 +15,7 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: corepack enable
-      - run: yarn install
+      - run: YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install
       - uses: actions/upload-artifact@v4
         with:
           name: dependency-lock

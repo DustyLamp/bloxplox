@@ -23,7 +23,10 @@ export function BlockEditor({ block, onClose, schedule, move, removed }: { block
   const existing = docs.some(d => d.id === block.id) || !!block.ruleId;
   const result = getCompletion(docs, blockResultId(block));
   const clashes = dayBlocks(docs, draft.timing.date ?? draft.resultDate).filter(b => b.id !== draft.id && b.timing.start < draft.timing.start + draft.timing.duration && b.timing.start + b.timing.duration > draft.timing.start);
-  function submit(e: FormEvent) { e.preventDefault(); if (!draft.name.trim()) return setError('Enter a name'); if (clashes.length && !conflict) return setConflict(true); void run(() => actions.place(draft, policy)); }
+  function submit(e: FormEvent) { e.preventDefault(); if (!draft.name.trim()) return setError('Enter a name'); if (clashes.length && !conflict) return setConflict(true); void run(async () => {
+    await actions.place({ ...draft, name: draft.name.trim(), activities: draft.activities.map(a => a.trim()).filter(Boolean) }, policy);
+    if (block.habitId !== draft.habitId && result.status !== 'none' && getCompletion(docs, blockResultId(draft)).status === 'none') await actions.complete(draft.habitId ?? draft.id, draft.resultDate, result);
+  }); }
   return <Dialog title={existing ? block.name : 'Add a block'} onClose={onClose}><form onSubmit={submit}>
     <Field label="Name"><input autoFocus required value={draft.name} maxLength={120} onChange={e => setDraft({ ...draft, name: e.target.value })}/></Field>
     <div className="bp2-fields"><Field label="Start time"><input type="time" step="900" required value={formatTime(draft.timing.start)} onChange={e => setDraft({ ...draft, timing: { ...draft.timing, start: parseTime(e.target.value) } })}/></Field><Field label="Duration (minutes)"><input type="number" min="15" max="1440" step="15" required value={draft.timing.duration} onChange={e => setDraft({ ...draft, timing: { ...draft.timing, duration: Number(e.target.value) } })}/></Field></div>
@@ -102,7 +105,7 @@ export function RuleEditor({ habit, block, rule, date, onClose }: { habit?: Habi
       {r.repeat !== 'once' && <Field label="Ends (optional)"><input type="date" min={r.startDate} value={r.endDate ?? ''} onChange={e => patch({ endDate: e.target.value || null })}/></Field>}
       <CategoryPicker selected={draft.categories} onChange={categories => setDraft({ ...draft, categories })}/>
       <Field label="If the time is occupied"><Select value={draft.conflict} onChange={e => setDraft({ ...draft, conflict: e.target.value as Rule['conflict'] })}><option value="push">Push following blocks</option><option value="free">Next available</option></Select></Field>
-      <Field label="Timezone"><Select value={r.timezone} onChange={e => patch({ timezone: e.target.value })}>{Intl.supportedValuesOf('timeZone').map(tz => <option key={tz}>{tz}</option>)}</Select></Field>
+      <Field label="Timezone"><Select value={r.timezone} onChange={e => patch({ timezone: e.target.value })}>{[...new Set([r.timezone, ...Intl.supportedValuesOf('timeZone')])].map(tz => <option key={tz}>{tz}</option>)}</Select></Field>
     </>}
     <ErrorText message={error}/><Button type="submit" primary disabled={busy} className="bp2-full">{linkId ? 'Link habit' : 'Save schedule'}</Button>
   </form>{rule && <Button className="bp2-full danger" onClick={() => void run(() => save(rule.id, 'rule', {}, true))}>Remove recurrence</Button>}</Dialog>;
