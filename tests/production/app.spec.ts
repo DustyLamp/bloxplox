@@ -57,11 +57,13 @@ test('swipes complete, mark not done and clear without opening the editor', asyn
   const cdp = isMobile ? await context.newCDPSession(page) : undefined;
   async function swipe(direction: number) {
     await expect(face).toBeVisible();
-    const b = await face.evaluate(el => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }), x = b.x + b.width * (direction > 0 ? .2 : .8), y = b.y + b.height * .65;
+    let b = { x: 0, y: 0, width: 0, height: 0 };
+    await expect.poll(async () => { b = await face.evaluate(el => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }); return b.width; }).toBeGreaterThan(0);
+    const x = b.x + b.width * (direction > 0 ? .2 : .8), y = b.y + b.height * .65;
     const distance = Math.min(180, b.width * .6) * direction;
     if (cdp) {
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
-      for (let i = 1; i <= 8; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + distance * i / 8, y }] });
+      for (let i = 1; i <= 8; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + distance * i / 8, y }] }); await page.waitForTimeout(16); }
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     } else {
       await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x + distance, y, { steps: 8 }); await page.mouse.up();
