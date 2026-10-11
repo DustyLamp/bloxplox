@@ -47,4 +47,32 @@ deploy backend before publishing the matching frontend runtime configuration.
 
 ## Verification log
 
-Implementation and deployment checks will be recorded here as they complete.
+Production checks on 2026-10-12 (Europe/Zurich):
+
+- Cognito SRP authentication and real public-signup email delivery/code confirmation succeeded. No credentials or personal email addresses are stored in this repository.
+- Live HTTP checks rejected unauthenticated calls and owner injection; two accounts using identical document IDs remained isolated.
+- Concurrent conditional writes returned one conflict. Independent edits merged, retrying an accepted write did not advance the checkpoint, and small-page catch-up retained every document and tombstone.
+- Streams notified only the owning account. Heartbeat responses and single-use ticket rejection passed.
+- Independent desktop (Zurich) and mobile (Los Angeles) browser databases synchronized through AWS. An isolated account saw no private records.
+- Both devices edited offline; reloading the cached shell preserved the edit. Reconnection merged a name change with the other device's note. Forced WebSocket closure recovered with a fresh ticket and resumed completion synchronization.
+- Sign-out/account switching isolated browser data. No browser runtime errors were observed.
+- The original prototype's seven interaction suites passed. Production domain tests cover calendar/DST/month-end rules, occurrence identity, shared results, conflict resolution, scheduling and Things. Production browser tests exercise desktop and touch layouts, swipes, resize, rearrangement, history, numeric results, offline persistence and one-off task sessions.
+- Amplify's custom-domain association is available. Both the root hostname and `www` return HTTPS 200 with the application and configured security headers.
+- The merge of PR #2 (`307c1a0`) triggered CodePipeline execution `a5ac4c80-8887-4a22-831c-ad9e44f30228`, which succeeded through source, tests/synthesis, self-mutation, backend deployment and Amplify job 2. The initially missing deployment-resource permission is now expressed in CDK and verified through automatic deployment.
+- With Things added: 18 domain tests and 25 production browser checks passed; the mobile-only skip is the desktop keyboard-grip check, with touch rearrangement covered separately. The 352 px navigation was inspected in the browser and adjusted to keep all three tabs, the menu, date and layout controls visible.
+
+The live test creates two disposable accounts and cleans their application partitions and users in `finally`. It never uses or deletes the owner's account. Run explicitly against the deployed application with an AWS profile authorized to create/remove test users and read/delete their DynamoDB partitions:
+
+```sh
+AWS_PROFILE=bloxplox yarn test:live
+```
+
+It writes the check results and desktop/mobile screenshots to ignored `test-results/live/`. `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` can select an existing Chromium binary. `BLOXPLOX_TEST_IP` is an optional temporary DNS override for initial DNS propagation checks; normal verification uses the production hostname without it.
+
+## Operational limits
+
+- Reminders run while the app is open; closed-app push and email reminders are not implemented.
+- Simultaneous edits to the same field converge to a deterministic winner. Independent fields merge. A block's Things selection is one field; task completions are separate documents and merge independently.
+- Habit records retain completed history; unrecorded past dates follow current weekday settings. Things retain a single completion date, cleared when reopened.
+- Mobile gestures have been exercised with Chromium touch input. Physical iOS/Safari testing remains outstanding.
+- Changes and tombstones are retained indefinitely for reliable catch-up. Review DynamoDB growth before adding retention. Monitor the notification dead-letter queue alarm; no external alert destination has been configured.

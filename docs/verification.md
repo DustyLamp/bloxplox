@@ -14,4 +14,4 @@ Verified on 2026-10-11 with Yarn 4.18.1, Node.js 24.19.0, Playwright 1.64.0 and 
 - Bundled font/icon assets rendered successfully; no Codex runtime or CDN was needed.
 - The packaged text files were checked for common credential patterns; no matches were found.
 
-These checks cover the prototype. They do not verify a production React implementation, backend, cross-device sync, authentication, Safari/WebKit, AWS deployment or a live domain; those do not exist in this handoff.
+These historical checks cover the approved prototype. The subsequent React application, backend, authentication, synchronization and production deployment are documented in the [production verification log](implementation.md#verification-log).

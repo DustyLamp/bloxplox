@@ -135,7 +135,12 @@ try {
   await new Promise<void>((resolve, reject) => { const timer = setTimeout(() => reject(new Error('Ticket replay did not reject')), 10000); replay.onopen = () => { clearTimeout(timer); reject(new Error('Used ticket was accepted')); }; replay.onerror = () => { clearTimeout(timer); resolve(); }; });
   record('Streams sends only owner notifications, heartbeat responds, and a WebSocket ticket cannot be replayed');
 
-  browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {});
+  browser = await chromium.launch({
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+    // Optional: verify the real hostname/TLS while a recursive resolver's old
+    // negative cache expires. Use only an address observed from authoritative DNS.
+    args: process.env.BLOXPLOX_TEST_IP ? [`--host-resolver-rules=MAP bloxplox.com ${process.env.BLOXPLOX_TEST_IP}`] : [],
+  });
   const first = await browser.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: 'Europe/Zurich' });
   const second = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, timezoneId: 'America/Los_Angeles' });
   const isolated = await browser.newContext();
@@ -191,6 +196,43 @@ try {
   await expect(pageB.getByRole('img', { name: 'Completed', exact: true })).toBeVisible({ timeout: 15000 });
   record('Forced socket reconnect obtains a new ticket and continues live completion synchronization');
 
+  await pageA.getByRole('button', { name: 'Things', exact: true }).click();
+  await pageA.getByLabel('New thing', { exact: true }).fill('QA one-off');
+  await pageA.getByRole('button', { name: 'Add thing', exact: true }).click();
+  await pageA.getByRole('button', { name: 'Edit QA one-off', exact: true }).click();
+  await pageA.getByRole('button', { name: 'Schedule thing', exact: true }).click();
+  await pageA.getByLabel('Block', { exact: true }).selectOption({ label: 'QA renamed offline · 08:00' });
+  await pageA.getByRole('button', { name: 'Add to block', exact: true }).click();
+  await pageB.getByRole('button', { name: '08:00 QA renamed offline 30m', exact: true }).click();
+  await expect(pageB.getByRole('checkbox', { name: 'Complete QA one-off', exact: true })).toBeVisible({ timeout: 15000 });
+  await first.setOffline(true); await second.setOffline(true);
+  await pageA.getByRole('button', { name: 'Edit QA one-off', exact: true }).click();
+  await pageA.getByLabel('Name', { exact: true }).fill('QA renamed thing');
+  await pageA.getByLabel('Notes', { exact: true }).fill('One task, across sessions and devices');
+  await pageA.getByRole('button', { name: 'Save', exact: true }).click();
+  await pageB.getByRole('checkbox', { name: 'Complete QA one-off', exact: true }).check();
+  await expect(pageB.getByRole('checkbox', { name: 'Complete QA one-off', exact: true })).toBeEnabled();
+  await pageA.reload(); await expect(pageA.getByRole('button', { name: 'Edit QA renamed thing', exact: true })).toBeVisible();
+  await first.setOffline(false); await second.setOffline(false);
+  await expect(pageA.getByRole('button', { name: 'Done 1', exact: true })).toBeVisible({ timeout: 30000 });
+  await expect(pageB.getByRole('checkbox', { name: 'Complete QA renamed thing', exact: true })).toBeChecked({ timeout: 30000 });
+  await pageA.getByRole('button', { name: 'Done 1', exact: true }).click();
+  await pageA.getByRole('button', { name: 'Edit QA renamed thing', exact: true }).click();
+  await expect(pageA.getByLabel('Notes', { exact: true })).toHaveValue('One task, across sessions and devices');
+  await pageA.getByRole('button', { name: 'Close', exact: true }).click();
+  await pageC.getByRole('button', { name: 'Things', exact: true }).click();
+  await expect(pageC.getByRole('button', { name: /Edit QA/ })).toHaveCount(0);
+  record('Things link to a real session; offline edits and completion merge across devices, reload safely and remain account-isolated');
+
+  await pageA.screenshot({ path: 'test-results/live/things-desktop.png', fullPage: true });
+  await pageB.screenshot({ path: 'test-results/live/things-in-block-mobile.png', fullPage: true });
+  await pageB.getByRole('button', { name: 'Close', exact: true }).click();
+  await pageB.getByRole('button', { name: 'Things', exact: true }).click();
+  await pageB.getByRole('button', { name: 'Done 1', exact: true }).click();
+  await pageB.screenshot({ path: 'test-results/live/things-mobile.png', fullPage: true });
+  await pageA.getByRole('button', { name: 'Blocks', exact: true }).click();
+  await pageB.getByRole('button', { name: 'Blocks', exact: true }).click();
+
   await pageA.screenshot({ path: 'test-results/live/desktop.png', fullPage: true });
   await pageB.screenshot({ path: 'test-results/live/mobile.png', fullPage: true });
   await menu(pageA, 'Settings');
@@ -198,6 +240,8 @@ try {
   await pageA.getByRole('dialog').getByRole('button', { name: 'Sign out', exact: true }).click();
   await signIn(pageA, b);
   await expect(pageA.getByText('QA renamed offline', { exact: true })).toHaveCount(0);
+  await pageA.getByRole('button', { name: 'Things', exact: true }).click();
+  await expect(pageA.getByRole('button', { name: /Edit QA/ })).toHaveCount(0);
   assert.deepEqual(errors, [], 'Browser runtime errors');
   record('Signing out and switching accounts isolates local data; no browser runtime errors');
 } finally {

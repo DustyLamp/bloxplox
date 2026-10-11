@@ -6,13 +6,14 @@ import { useData, useSettings } from '../commons/data';
 import { blankBlock, useActions } from '../domain/actions';
 import { Blocks, Tracker } from './components/Boards';
 import { History } from './components/History';
+import { Things } from './components/Things';
 import { Backlog, Categories, ManageHabits, Reports, Settings } from './components/Pages';
 import { BlockEditor, HabitEditor, HabitMenu, MovePicker, NumericResult, RuleEditor } from './components/Editors';
 import { Button, DebossFilter, Dialog, Field, IconButton, Logo } from './components/common';
 
 type Modal = { type: 'block' | 'move'; block: Block } | { type: 'habit' | 'habit-menu' | 'value'; habit?: Habit } | { type: 'rule'; habit?: Habit; block?: Block; rule?: Rule } | { type: 'calendar' } | null;
 export function App() {
-  const { docs, status, sync, signOut, error, clearError } = useData(), { settings, saveSettings } = useSettings(), actions = useActions();
+  const { docs, status, saving, sync, signOut, error, clearError } = useData(), { settings, saveSettings } = useSettings(), actions = useActions();
   const navigate = useNavigate(), path = useRouterState({ select: s => s.location.pathname });
   const page = path.slice(1) || 'blocks', [date, setDate] = useState(() => localDate(settings.timezone));
   const [menu, setMenu] = useState(false), [modal, setModal] = useState<Modal>(null), [notice, setNotice] = useState(''), [undo, setUndo] = useState<Block | null>(null), [statsHabit, setStatsHabit] = useState<Habit>();
@@ -58,23 +59,24 @@ export function App() {
   };
   return <div className="bp2-app"><DebossFilter/><header className="bp2-header">
     <button type="button" className="bp2-brand" aria-label="BloxPlox home" onClick={() => go('blocks')}><Logo/></button>
-    <div className="bp2-switch" aria-label="Day view"><button type="button" aria-pressed={page === 'blocks'} onClick={() => go('blocks')}>Blocks</button><button type="button" aria-pressed={page === 'tracker'} onClick={() => go('tracker')}>Tracker</button></div>
-    <div className="bp2-layoutswitch" aria-label="Layout for Blocks and Tracker"><button type="button" aria-pressed={settings.layout === 'grid'} onClick={() => run(saveSettings({ layout: 'grid' }))}><Grid2X2/>Grid</button><button type="button" aria-pressed={settings.layout === 'list'} onClick={() => run(saveSettings({ layout: 'list' }))}><List/>List</button></div>
+    <div className="bp2-switch" aria-label="Main views"><button type="button" aria-pressed={page === 'blocks'} onClick={() => go('blocks')}>Blocks</button><button type="button" aria-pressed={page === 'tracker'} onClick={() => go('tracker')}>Tracker</button><button type="button" aria-pressed={page === 'things'} onClick={() => go('things')}>Things</button></div>
+    <div className="bp2-layoutswitch" aria-label="Layout for all views"><button type="button" aria-pressed={settings.layout === 'grid'} onClick={() => run(saveSettings({ layout: 'grid' }))}><Grid2X2/>Grid</button><button type="button" aria-pressed={settings.layout === 'list'} onClick={() => run(saveSettings({ layout: 'list' }))}><List/>List</button></div>
     <div className="bp2-datebar"><IconButton label="Previous day" onClick={() => setDate(shiftDate(date, -1))}><ChevronLeft/></IconButton><button className="bp2-datebutton" onClick={() => setModal({ type: 'calendar' })}>{formatDate(date)}<CalendarDays size={15}/></button><IconButton label="Next day" onClick={() => setDate(shiftDate(date, 1))}><ChevronRight/></IconButton></div>
     <IconButton label="Menu" className="bp2-menutoggle" aria-expanded={menu} onClick={() => setMenu(!menu)}><Menu/></IconButton>
     {menu && <nav className="bp2-menu" aria-label="Main menu">{['backlog', 'habits', 'categories', 'history', 'settings'].map(item => <button key={item} onClick={() => { if (item === 'history') setStatsHabit(undefined); go(item); }}>{item[0].toUpperCase() + item.slice(1)}</button>)}</nav>}
   </header>
-  <div className={`sync-line sync-${status}`} role="status"><span className="sync-dot"/>{({ offline: 'Offline · saved on this device', syncing: 'Syncing', synced: 'Synced', retrying: 'Saved on this device · retrying sync', 'sign-in': 'Saved on this device · sign in to sync' })[status]}{status === 'retrying' && <button onClick={sync} aria-label="Retry sync"><RefreshCw size={13}/></button>}{status === 'sign-in' && <button onClick={() => run(signOut())}>Sign in</button>}</div>
+  <div className={`sync-line sync-${status}`} role="status"><span className="sync-dot"/>{saving ? 'Saving on this device…' : ({ offline: 'Offline · saved on this device', syncing: 'Syncing', synced: 'Synced', retrying: 'Saved on this device · retrying sync', 'sign-in': 'Saved on this device · sign in to sync' })[status]}{status === 'retrying' && <button onClick={sync} aria-label="Retry sync"><RefreshCw size={13}/></button>}{status === 'sign-in' && <button onClick={() => run(signOut())}>Sign in</button>}</div>
   <main className="bp2-main">
     {['blocks', 'tracker'].includes(page) && <History date={date} onDate={setDate} manage={page === 'tracker' ? () => go('habits') : undefined}/>}
     {page === 'blocks' && <Blocks date={date} edit={block => setModal({ type: 'block', block })} add={start => setModal({ type: 'block', block: blankBlock(date, start ?? settings.dayStart) })} movePicker={block => setModal({ type: 'move', block })} report={report}/>}
     {page === 'tracker' && <Tracker date={date} menu={habit => setModal({ type: 'habit-menu', habit })} value={habit => setModal({ type: 'value', habit })} add={() => setModal({ type: 'habit' })} report={report}/>}
+    {page === 'things' && <Things date={date} editBlock={block => setModal({ type: 'block', block })} report={report}/>}
     {page === 'backlog' && <Backlog date={date} edit={block => setModal({ type: 'block', block })} report={report}/>}
     {page === 'categories' && <Categories report={report}/>}
     {page === 'habits' && <ManageHabits add={() => setModal({ type: 'habit' })} edit={habit => setModal({ type: 'habit', habit })} schedule={rule => setModal({ type: 'rule', rule })}/>}
     {page === 'history' && <Reports date={date} habit={statsHabit}/>}
     {page === 'settings' && <Settings report={report}/>}
-    {!['blocks', 'tracker', 'backlog', 'categories', 'habits', 'history', 'settings'].includes(page) && <section className="bp2-content"><h1>Page not found</h1><Button onClick={() => go('blocks')}>Back to Blocks</Button></section>}
+    {!['blocks', 'tracker', 'things', 'backlog', 'categories', 'habits', 'history', 'settings'].includes(page) && <section className="bp2-content"><h1>Page not found</h1><Button onClick={() => go('blocks')}>Back to Blocks</Button></section>}
   </main>
   {modal?.type === 'calendar' && <Dialog title="Date" onClose={close}><Field label="Choose date"><input type="date" value={date} onChange={e => { if (e.target.value) setDate(e.target.value); }}/></Field><div className="bp2-actionrow"><Button onClick={() => { setDate(localDate(settings.timezone)); close(); }}>Today</Button><Button primary onClick={close}>Done</Button></div></Dialog>}
   {modal?.type === 'block' && <BlockEditor key={modal.block.id} block={modal.block} onClose={close} schedule={openRule} move={block => setModal({ type: 'move', block })} removed={block => { setUndo(block); report('Block deleted'); }}/>}

@@ -2,8 +2,8 @@
 
 ## Layout and visual language
 
-- Blocks is the schedule. Tracker is the habit view. Both are directly accessible from the main screen.
-- One global Grid/List setting controls both views and remains selected when switching tabs. Persistence across app restarts belongs to the production implementation.
+- Blocks is the schedule. Tracker is the recurring habit view. Things is the one-off task list. All three are directly accessible from the main screen.
+- One global Grid/List setting controls all three views and remains selected when switching tabs and across restarts.
 - Chronological blocks occupy space proportional to their duration. Keep the screen filled with colour, small seams, and rounded outside corners.
 - Poppins, bold weights, ordinary sentence casing. No slogans, motivational copy, or explanatory filler.
 - Categories are separately managed, trackable entities. A block can contain several activities and categories; categories determine its colours.
@@ -34,6 +34,17 @@ The card follows the finger and exposes the action underneath. Completion reveal
 ## Tracker
 
 Preserve RealTracker's habit management structure: binary and numeric habits, a target and unit, active state, weekdays, reminder settings, direct numeric entry, result actions, skip/unskip, and statistics screens. Tracker cards retain the original mint/pink/blue-grey status colours. The latest requested typography is Poppins in normal case rather than RealTracker's uppercase Raleway.
+
+## Things
+
+- One-off tasks have a name, notes, categories, optional estimate and optional due date. They stay open across days until completed or deleted.
+- Add tasks directly in Things or from a block. The Open list puts dated tasks first; Done keeps completion dates and allows reopening.
+- Select several Things to plan a block, or add them to an existing block on a chosen day. Suggested duration sums estimates (15 minutes for an unspecified estimate), rounded up to the schedule's 15-minute increments.
+- A block may contain multiple Things; a Thing can be worked on across several blocks. Every reference shares the same task and completion.
+- A completed block records its session. It does not automatically complete its tasks. Checking off a task does not automatically complete its blocks.
+- The daily history bar continues to measure scheduled blocks and recurring habits, counting linked habit/block results once. Things have their own Done history, so referring to a task in several sessions never creates duplicate completed tasks.
+- Moving, resizing or backlogging a block keeps its task references. Deleting a block leaves the tasks intact. Removing a task from a block only removes that reference; deleting a Thing removes it from all checklists.
+- Repeating a block keeps the original checklist on its first occurrence. Subsequent sessions begin with an empty checklist; one-off tasks do not silently recur.
 
 ## Shared history
 
