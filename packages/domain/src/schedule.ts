@@ -11,13 +11,16 @@ export function swipeStatus(status: Completion['status'], direction: 'right' | '
   const target = direction === 'right' ? 'done' : 'missed';
   return status === target ? 'none' : target;
 }
+export function completionWithStatus(current: Completion, status: Completion['status']): Completion {
+  return { status, value: status === 'none' ? 0 : current.value };
+}
 export function instantiate(rule: Rule, date: string): Block {
   return { id: occurrenceId(rule.seriesId, date), name: rule.name, timing: { date, start: rule.start, duration: rule.duration },
     categories: rule.categories, activities: [], habitId: rule.habitId, resultDate: date,
     ruleId: rule.id, occurrenceDate: date, order: 0, notes: '', backlogDate: null };
 }
 export function dayBlocks(docs: Document[], date: string): Block[] {
-  const blocks = entities(docs, 'block').filter(b => b.timing.date === date);
+  let blocks = normalizeSchedule(entities(docs, 'block').filter(b => b.timing.date === date));
   const ids = new Set(docs.filter(d => d.kind === 'block').map(d => d.id));
   const habits = entities(docs, 'habit');
   for (const rule of entities(docs, 'rule').sort((a, b) => a.id.localeCompare(b.id))) {
@@ -25,8 +28,7 @@ export function dayBlocks(docs: Document[], date: string): Block[] {
     if (rule.habitId && !habits.some(h => h.id === rule.habitId && h.active)) continue;
     if (matchesRecurrence(rule.recurrence, date) && !ids.has(occurrenceId(rule.seriesId, date))) {
       const generated = instantiate(rule, date);
-      if (rule.conflict === 'free') generated.timing.start = nextSpace(blocks, generated.timing.start, generated.timing.duration);
-      blocks.push(generated);
+      blocks = projectInsertion(blocks, generated, rule.conflict);
     }
   }
   // Resolve overlapping concurrent placements deterministically. Persisted intentions
@@ -50,7 +52,7 @@ export function nextSpace(blocks: Block[], start: number, duration: number): num
   }
   return next;
 }
-export function insertBlock(blocks: Block[], block: Block, policy: 'push' | 'free' = 'push'): Block[] | null {
+function projectInsertion(blocks: Block[], block: Block, policy: 'push' | 'free'): Block[] {
   const other = blocks.filter(b => b.id !== block.id).map(b => ({ ...b, timing: { ...b.timing } }));
   const added = { ...block, timing: { ...block.timing } };
   if (policy === 'free') added.timing.start = nextSpace(other, added.timing.start, added.timing.duration);
@@ -60,8 +62,11 @@ export function insertBlock(blocks: Block[], block: Block, policy: 'push' | 'fre
     item.timing.start = Math.max(end, item.timing.start);
     end = item.timing.start + item.timing.duration;
   }
-  if (end > 1440) return null;
   return [...other, added].sort((a, b) => a.timing.start - b.timing.start);
+}
+export function insertBlock(blocks: Block[], block: Block, policy: 'push' | 'free' = 'push'): Block[] | null {
+  const proposed = projectInsertion(blocks, block, policy);
+  return proposed.some(b => b.timing.start + b.timing.duration > 1440) ? null : proposed;
 }
 export function dueHabits(docs: Document[], date: string): Habit[] {
   const blocks = dayBlocks(docs, date);

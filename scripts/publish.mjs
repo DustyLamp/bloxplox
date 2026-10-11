@@ -1,4 +1,4 @@
-import { readFile, writeFile, readdir } from 'node:fs/promises';
+import { readFile, writeFile, readdir, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { AmplifyClient, CreateDeploymentCommand, StartDeploymentCommand, GetJobCommand } from '@aws-sdk/client-amplify';
@@ -28,6 +28,7 @@ self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=
 self.addEventListener('fetch',event=>{const url=new URL(event.request.url);if(event.request.method!=='GET'||url.origin!==self.location.origin)return;if(event.request.mode==='navigate'){event.respondWith(fetch(event.request).catch(()=>caches.match('/index.html')));return;}if(url.pathname==='/config.json'){event.respondWith(fetch(event.request).catch(()=>caches.match('/config.json')));return;}if(FILES.includes(url.pathname))event.respondWith(caches.match(event.request).then(hit=>hit||fetch(event.request)));});
 `);
 const appId = process.env.BLOXPLOX_AMPLIFY_APP_ID || values.AmplifyAppId;
+await rm('bloxplox-web.zip', { force: true });
 execFileSync('zip', ['-qr', '../bloxplox-web.zip', '.'], { cwd: 'dist' });
 const amplify = new AmplifyClient({ region, credentials });
 const deployment = await amplify.send(new CreateDeploymentCommand({ appId, branchName: 'main' }));

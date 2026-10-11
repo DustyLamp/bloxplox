@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ChevronRight, Plus, Repeat, Link, Trash2, CalendarPlus, ArrowDownUp } from 'lucide-react';
-import { blockResultId, changedFields, dayBlocks, entities, formatDate, formatDuration, formatTime, getCompletion, instantiate, matchesRecurrence, parseTime, resultId, shiftDate, weekdayNames, type Block, type Habit, type Rule, type Completion } from '../../../../../packages/domain/src/index';
+import { blockResultId, completionWithStatus, changedFields, dayBlocks, entities, formatDate, formatDuration, formatTime, getCompletion, instantiate, matchesRecurrence, parseTime, resultId, shiftDate, weekdayNames, type Block, type Habit, type Rule, type Completion } from '../../../../../packages/domain/src/index';
 import { useData, useSettings } from '../../commons/data';
 import { useActions } from '../../domain/actions';
 import { Button, Dialog, ErrorText, Field, Select } from './common';
@@ -77,7 +77,7 @@ export function Weekdays({ value, onChange }: { value: number[]; onChange: (days
 }
 export function HabitMenu({ habit, date, onClose, edit, schedule, stats }: { habit: Habit; date: string; onClose: () => void; edit: () => void; schedule: () => void; stats: () => void }) {
   const { docs } = useData(), { complete } = useActions(), { error, run } = useSubmit(onClose), current = getCompletion(docs, resultId(habit.id, date));
-  return <Dialog title={habit.name} onClose={onClose} tracker><div className="bp2-actionrow">{(['done', 'missed', 'none'] as const).map((status, i) => <Button key={status} onClick={() => void run(() => complete(habit.id, date, { ...current, status }))}>{['Done', 'Not done', 'Clear'][i]}</Button>)}</div>
+  return <Dialog title={habit.name} onClose={onClose} tracker><div className="bp2-actionrow">{(['done', 'missed', 'none'] as const).map((status, i) => <Button key={status} onClick={() => void run(() => complete(habit.id, date, completionWithStatus(current, status)))}>{['Done', 'Not done', 'Clear'][i]}</Button>)}</div>
     <button className="bp2-option" onClick={schedule}><CalendarPlus/>Schedule habit<ChevronRight className="bp2-chevron"/></button><button className="bp2-option" onClick={edit}>Edit habit<ChevronRight className="bp2-chevron"/></button><button className="bp2-option" onClick={stats}>View stats<ChevronRight className="bp2-chevron"/></button><button className="bp2-option" onClick={() => void run(() => complete(habit.id, date, { ...current, status: current.status === 'skip' ? 'none' : 'skip' }))}>{current.status === 'skip' ? 'Unskip' : 'Skip'}</button><ErrorText message={error}/>
   </Dialog>;
 }
