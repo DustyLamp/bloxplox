@@ -34,13 +34,16 @@ export function startSync(db: Database, config: SyncConfig, onStatus: (status: S
   const replication = replicateRxCollection<Document, Checkpoint>({
     collection: db.records, replicationIdentifier: `bloxplox-v1:${config.apiUrl}:${config.subject}`,
     live: true, retryTime: 5000, waitForLeadership: true,
-    pull: { batchSize: 50, stream$: stream, handler: (checkpoint, limit) => request('/sync/pull', { checkpoint, limit }) },
+    pull: { batchSize: 50, stream$: stream, handler: async (checkpoint, limit) => {
+      const result = await request<{ documents: Document[]; checkpoint: Checkpoint }>('/sync/pull', { checkpoint, limit });
+      return { ...result, documents: result.documents.map(doc => ({ ...doc, _deleted: false })) };
+    } },
     push: { batchSize: 20, handler: async rows => {
       const response = await request<{ conflicts: Document[] }>('/sync/push', { changes: rows.map(row => ({
         newDocumentState: wireDocument(row.newDocumentState), assumedMasterState: row.assumedMasterState ? wireDocument(row.assumedMasterState) : null,
       })) });
       stream.next('RESYNC');
-      return response.conflicts;
+      return response.conflicts.map(doc => ({ ...doc, _deleted: false }));
     } },
   });
   const subscriptions = [
