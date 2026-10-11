@@ -1,0 +1,442 @@
+{
+  "today": "2026-10-11",
+  "categories": [
+    {
+      "name": "German",
+      "color": "purple",
+      "hex": "#b48aff"
+    },
+    {
+      "name": "Work",
+      "color": "blue",
+      "hex": "#70b4ff"
+    },
+    {
+      "name": "Personal",
+      "color": "orange",
+      "hex": "#ff9b57"
+    },
+    {
+      "name": "Movement",
+      "color": "lime",
+      "hex": "#c5ef51"
+    },
+    {
+      "name": "Reading",
+      "color": "yellow",
+      "hex": "#ffe35c"
+    },
+    {
+      "name": "Family",
+      "color": "pink",
+      "hex": "#ff86ac"
+    }
+  ],
+  "days": {
+    "2026-10-11": [
+      {
+        "id": 1,
+        "name": "Breakfast",
+        "start": 480,
+        "dur": 30,
+        "cats": [
+          "Personal"
+        ],
+        "done": true
+      },
+      {
+        "id": 2,
+        "name": "German",
+        "start": 510,
+        "dur": 60,
+        "cats": [
+          "German"
+        ],
+        "done": true
+      },
+      {
+        "id": 3,
+        "name": "Project work",
+        "start": 570,
+        "dur": 150,
+        "cats": [
+          "Work"
+        ]
+      },
+      {
+        "id": 4,
+        "name": "Lunch",
+        "start": 720,
+        "dur": 60,
+        "cats": [
+          "Personal"
+        ]
+      },
+      {
+        "id": 5,
+        "name": "BloxPlox",
+        "start": 780,
+        "dur": 90,
+        "cats": [
+          "Work"
+        ]
+      },
+      {
+        "id": 6,
+        "name": "Admin",
+        "start": 870,
+        "dur": 30,
+        "cats": [
+          "Personal"
+        ]
+      },
+      {
+        "id": 7,
+        "name": "Walk + German podcast",
+        "start": 900,
+        "dur": 60,
+        "cats": [
+          "Movement",
+          "German"
+        ],
+        "tasks": [
+          "Walk",
+          "German podcast"
+        ]
+      },
+      {
+        "id": 8,
+        "name": "Cooking",
+        "start": 960,
+        "dur": 60,
+        "cats": [
+          "Personal"
+        ]
+      },
+      {
+        "id": 9,
+        "name": "Call family",
+        "start": 1020,
+        "dur": 30,
+        "cats": [
+          "Family"
+        ]
+      },
+      {
+        "id": 10,
+        "name": "Reading",
+        "start": 1050,
+        "dur": 90,
+        "cats": [
+          "Reading"
+        ]
+      },
+      {
+        "id": 11,
+        "name": "Dinner",
+        "start": 1140,
+        "dur": 60,
+        "cats": [
+          "Personal"
+        ]
+      }
+    ],
+    "2026-10-12": [
+      {
+        "id": 12,
+        "name": "Breakfast",
+        "start": 480,
+        "dur": 30,
+        "cats": [
+          "Personal"
+        ]
+      },
+      {
+        "id": 13,
+        "name": "Project work",
+        "start": 540,
+        "dur": 180,
+        "cats": [
+          "Work"
+        ]
+      },
+      {
+        "id": 14,
+        "name": "Lunch",
+        "start": 720,
+        "dur": 60,
+        "cats": [
+          "Personal"
+        ]
+      },
+      {
+        "id": 15,
+        "name": "Run",
+        "start": 1020,
+        "dur": 60,
+        "cats": [
+          "Movement"
+        ]
+      }
+    ],
+    "2026-10-10": [
+      {
+        "id": 16,
+        "name": "German",
+        "start": 540,
+        "dur": 90,
+        "cats": [
+          "German"
+        ],
+        "done": true
+      },
+      {
+        "id": 17,
+        "name": "Hike",
+        "start": 660,
+        "dur": 180,
+        "cats": [
+          "Movement"
+        ],
+        "done": true
+      },
+      {
+        "id": 18,
+        "name": "Reading",
+        "start": 900,
+        "dur": 60,
+        "cats": [
+          "Reading"
+        ],
+        "done": true
+      },
+      {
+        "id": 19,
+        "name": "Dinner",
+        "start": 1080,
+        "dur": 90,
+        "cats": [
+          "Personal"
+        ],
+        "done": true
+      }
+    ]
+  },
+  "backlog": [
+    {
+      "id": 30,
+      "name": "German chapter 4",
+      "dur": 45,
+      "cats": [
+        "German"
+      ],
+      "date": ""
+    },
+    {
+      "id": 31,
+      "name": "Kitchen shelves",
+      "dur": 60,
+      "cats": [
+        "Personal"
+      ],
+      "date": ""
+    },
+    {
+      "id": 32,
+      "name": "Book weekend trip",
+      "dur": 30,
+      "cats": [
+        "Personal"
+      ],
+      "date": "2026-10-17"
+    }
+  ],
+  "habits": [
+    {
+      "id": 1,
+      "name": "German",
+      "description": "",
+      "type": "value",
+      "unit": "minutes",
+      "target": 30,
+      "active": true,
+      "week": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "reminder": "08:30"
+    },
+    {
+      "id": 2,
+      "name": "Exercise",
+      "description": "",
+      "type": "binary",
+      "unit": "",
+      "target": 0,
+      "active": true,
+      "week": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "reminder": ""
+    },
+    {
+      "id": 3,
+      "name": "Read",
+      "description": "",
+      "type": "value",
+      "unit": "pages",
+      "target": 20,
+      "active": true,
+      "week": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "reminder": ""
+    },
+    {
+      "id": 4,
+      "name": "Meditate",
+      "description": "",
+      "type": "binary",
+      "unit": "",
+      "target": 0,
+      "active": true,
+      "week": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "reminder": ""
+    },
+    {
+      "id": 5,
+      "name": "Water",
+      "description": "",
+      "type": "value",
+      "unit": "litres",
+      "target": 2,
+      "active": true,
+      "week": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "reminder": ""
+    },
+    {
+      "id": 6,
+      "name": "No alcohol",
+      "description": "",
+      "type": "binary",
+      "unit": "",
+      "target": 0,
+      "active": true,
+      "week": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "reminder": ""
+    }
+  ],
+  "habitResults": {
+    "2026-10-11": {
+      "1": {
+        "status": "done",
+        "value": 45
+      },
+      "2": {
+        "status": "done"
+      },
+      "3": {
+        "status": "none",
+        "value": 0
+      },
+      "4": {
+        "status": "missed"
+      },
+      "5": {
+        "status": "none",
+        "value": 1.5
+      },
+      "6": {
+        "status": "none"
+      }
+    },
+    "2026-10-10": {
+      "1": {
+        "status": "done",
+        "value": 60
+      },
+      "2": {
+        "status": "done"
+      },
+      "3": {
+        "status": "done",
+        "value": 24
+      },
+      "4": {
+        "status": "done"
+      },
+      "5": {
+        "status": "done",
+        "value": 2.5
+      },
+      "6": {
+        "status": "done"
+      }
+    },
+    "2026-10-09": {
+      "1": {
+        "status": "done",
+        "value": 35
+      },
+      "2": {
+        "status": "missed"
+      },
+      "3": {
+        "status": "done",
+        "value": 22
+      },
+      "4": {
+        "status": "done"
+      },
+      "5": {
+        "status": "done",
+        "value": 2
+      },
+      "6": {
+        "status": "done"
+      }
+    }
+  },
+  "schedules": []
+}

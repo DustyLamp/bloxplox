@@ -1,0 +1,10 @@
+node_modules/
+.yarn/
+dist/
+test-results/
+.env
+.env.*
+!.env.example
+cdk.out/
+.DS_Store
+*.log

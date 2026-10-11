@@ -1,0 +1,4 @@
+:root { color-scheme: light dark; }
+body { margin: 0; padding: 12px; background: light-dark(#fafaf8, #191a1e); }
+svg.lucide { display: inline-block; vertical-align: middle; width: 16px; height: 16px; }
+@media (max-width: 560px) { body { padding: 8px; } }

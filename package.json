@@ -1,0 +1,21 @@
+{
+  "name": "bloxplox",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BloxPlox interaction prototype and implementation handoff",
+  "packageManager": "yarn@4.18.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "start": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs",
+    "test:install": "playwright install chromium",
+    "samples:export": "node scripts/export-samples.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.64.0"
+  }
+}

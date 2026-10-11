@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="BloxPlox interactive prototype: daily blocks and habit tracking.">
+  <title>BloxPlox — Prototype</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="shell.css">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="assets/vendor/lucide.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+<div id="bloxplox-v2" aria-label="Bloxplox revised mockups">
+  <div class="bp2-review"><label>Mockup <select id="bp2-scenes" aria-label="Choose mockup"></select></label><span>Sample data</span></div>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute;pointer-events:none">
+  <defs>
+    <filter id="bp2-check-deboss" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feOffset in="SourceAlpha" dx="0" dy="0.95" result="lower"/>
+      <feComposite in="SourceAlpha" in2="lower" operator="out" result="upper-edge"/>
+      <feGaussianBlur in="upper-edge" stdDeviation="0.3" result="soft-upper"/>
+      <feFlood flood-color="#19241f" flood-opacity="0.86" result="shade"/>
+      <feComposite in="shade" in2="soft-upper" operator="in" result="inner-shade"/>
+      <feOffset in="SourceAlpha" dx="0" dy="-0.55" result="upper"/>
+      <feComposite in="SourceAlpha" in2="upper" operator="out" result="lower-edge"/>
+      <feGaussianBlur in="lower-edge" stdDeviation="0.2" result="soft-lower"/>
+      <feFlood flood-color="#ffffff" flood-opacity="0.45" result="light"/>
+      <feComposite in="light" in2="soft-lower" operator="in" result="inner-light"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="inner-shade"/><feMergeNode in="inner-light"/></feMerge>
+    </filter>
+  </defs>
+</svg>
+  <div class="bp2-app" aria-label="Bloxplox">
+    <header class="bp2-header"></header>
+    <main class="bp2-main"></main>
+    <div class="bp2-overlay" hidden></div>
+    <div class="bp2-toast" role="status" aria-live="polite" hidden></div>
+  </div>
+</div>
+  <noscript>This interactive prototype needs JavaScript enabled.</noscript>
+</body>
+</html>
