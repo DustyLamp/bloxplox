@@ -26,7 +26,7 @@ export class PipelineStack extends Stack {
       input: source, installCommands, commands: ['yarn build', 'node scripts/publish.mjs'],
       envFromCfnOutputs: { BLOXPLOX_API_URL: app.apiUrl, BLOXPLOX_SOCKET_URL: app.socketUrl, BLOXPLOX_POOL_ID: app.poolId, BLOXPLOX_CLIENT_ID: app.clientId, BLOXPLOX_AMPLIFY_APP_ID: app.appId },
       env: { BLOXPLOX_REGION: deployment.region },
-      rolePolicyStatements: [new PolicyStatement({ actions: ['amplify:CreateDeployment', 'amplify:StartDeployment', 'amplify:GetJob'], resources: [`arn:aws:amplify:${this.region}:${this.account}:apps/*/branches/main`, `arn:aws:amplify:${this.region}:${this.account}:apps/*/branches/main/jobs/*`] })],
+      rolePolicyStatements: [new PolicyStatement({ actions: ['amplify:CreateDeployment', 'amplify:StartDeployment', 'amplify:GetJob'], resources: [`arn:aws:amplify:${this.region}:${this.account}:apps/*/branches/main`, `arn:aws:amplify:${this.region}:${this.account}:apps/*/branches/main/deployments/*`, `arn:aws:amplify:${this.region}:${this.account}:apps/*/branches/main/jobs/*`] })],
     })] });
   }
 }
