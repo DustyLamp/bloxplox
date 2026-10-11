@@ -133,3 +133,38 @@ test('history extends in both directions without changing the selected day', asy
   await expect.poll(() => history.locator('[data-date]').last().getAttribute('data-date')).not.toBe(last);
   await expect(history.locator('[aria-pressed=true]')).toHaveAttribute('data-date', selected!);
 });
+
+test('resize seam previews duration and persists the new size', async ({ page, context, isMobile }) => {
+  await open(page); await addBlock(page, 'Resize');
+  const edge = page.getByRole('button', { name: 'Resize Resize; arrow keys adjust fifteen minutes', exact: true });
+  await expect(edge).toBeAttached();
+  const box = (await edge.boundingBox())!, band = (await page.locator('.bp2-band').first().boundingBox())!;
+  const x = box.x + box.width / 2, y = box.y + box.height / 2, delta = band.width / (isMobile ? 120 : 240) * 30;
+  const cdp = isMobile ? await context.newCDPSession(page) : undefined;
+  if (cdp) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + delta, y }] });
+  } else { await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x + delta, y, { steps: 6 }); }
+  await expect(page.getByRole('button', { name: '08:00 Resize 1h', exact: true })).toBeVisible();
+  if (cdp) await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); else await page.mouse.up();
+  await expect(page.locator('[data-resizing=true]')).toHaveCount(0);
+  await page.reload(); await expect(page.getByRole('button', { name: '08:00 Resize 1h', exact: true })).toBeVisible();
+});
+
+test('numeric habits accept values, complete at target, and clear the result', async ({ page }) => {
+  await open(page); await page.getByRole('button', { name: 'Tracker', exact: true }).click();
+  await page.getByRole('button', { name: 'Add habit', exact: true }).click();
+  await page.getByLabel('Name', { exact: true }).fill('Practice');
+  await page.getByLabel('Type', { exact: true }).selectOption('value');
+  await page.getByLabel('Target', { exact: true }).fill('30');
+  await page.getByLabel('Unit', { exact: true }).fill('minutes');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: 'Set result for Practice', exact: true }).click();
+  await page.getByLabel('minutes', { exact: true }).fill('45');
+  await page.getByRole('button', { name: 'Set result', exact: true }).click();
+  await expect(page.getByText('1 / 1 done', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Practice At least 30 minutes', exact: true }).click();
+  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Set result for Practice', exact: true })).toHaveText('0');
+  await expect(page.getByText('0 / 1 done', { exact: true })).toBeVisible();
+});

@@ -4,8 +4,8 @@ import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
 
 export default defineConfig({
-  root: 'apps/web', plugins: [react(), tailwindcss()], define: { global: 'globalThis' },
+  root: resolve(import.meta.dirname, 'apps/web'), plugins: [react(), tailwindcss()], define: { global: 'globalThis' },
   resolve: { alias: { '@': resolve(import.meta.dirname, 'apps/web/src') } },
   build: { outDir: '../../dist', emptyOutDir: true },
-  test: { root: '.', include: ['packages/**/*.test.ts', 'services/**/*.test.ts', 'infrastructure/**/*.test.ts'] },
+  test: { root: import.meta.dirname, include: ['packages/**/*.test.ts', 'services/**/*.test.ts', 'infrastructure/**/*.test.ts'] },
 });

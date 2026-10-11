@@ -1,5 +1,5 @@
 import { useData } from '../commons/data';
-import { blockResultId, canonical, changedFields, dayBlocks, getCompletion, insertBlock, resultId, type Block, type Completion, type DataByKind } from '../../../../packages/domain/src/index';
+import { blockResultId, canonical, changedFields, completionWithStatus, dayBlocks, getCompletion, insertBlock, resultId, type Block, type Completion, type DataByKind } from '../../../../packages/domain/src/index';
 
 export function useActions() {
   const { docs, save } = useData();
@@ -26,7 +26,7 @@ export function useActions() {
     // Freeze the occurrence when acted on, so subsequent rule edits preserve history.
     if (block.ruleId && !docs.some(d => d.id === block.id)) await saveBlock(block);
     const old = getCompletion(docs, blockResultId(block));
-    await complete(block.habitId ?? block.id, block.resultDate, { ...old, status });
+    await complete(block.habitId ?? block.id, block.resultDate, completionWithStatus(old, status));
   }
   async function link(block: Block, habitId: string | null) {
     const old = getCompletion(docs, blockResultId(block));

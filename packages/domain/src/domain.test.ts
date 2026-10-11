@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blockResultId, categoryMinutes, completionStats, dayBlocks, documentSchema, editDocument, getCompletion, insertBlock, localDate, matchesRecurrence, mergeDocuments, occurrenceId, resultId, sameContent, shiftDate, swipeStatus, type Block, type Document, type Recurrence, type Rule } from './index';
+import { blockResultId, categoryMinutes, completionStats, completionWithStatus, dayBlocks, documentSchema, editDocument, getCompletion, insertBlock, localDate, matchesRecurrence, mergeDocuments, occurrenceId, resultId, sameContent, shiftDate, swipeStatus, type Block, type Document, type Recurrence, type Rule } from './index';
 
 const recurrence: Recurrence = { startDate: '2026-01-31', endDate: null, repeat: 'monthly', weekdays: [0, 2, 4], interval: 2, monthDay: 31, timezone: 'Europe/Zurich' };
 const block = (id: string, start = 480, duration = 60): Block => ({ id, name: id, timing: { date: '2026-10-11', start, duration }, categories: ['work'], activities: [], habitId: null, resultDate: '2026-10-11', ruleId: null, occurrenceDate: null, order: 0, notes: '', backlogDate: null });
@@ -67,6 +67,19 @@ describe('stable occurrences and shared completion', () => {
     const habit = editDocument(base[1], 'habit-1', 'habit', { active: false }, 'test');
     const result = editDocument(undefined, resultId('habit-1', '2026-10-11'), 'result', { subjectId: 'habit-1', date: '2026-10-11', completion: { status: 'done', value: 0 } }, 'test');
     expect(completionStats([habit, result], '2026-10-11')).toEqual({ done: 1, total: 1, skipped: 0 });
+  });
+  it('applies the recurrence conflict policy without hiding midnight overflow', () => {
+    const overlap = doc(block('existing', 600, 60));
+    const push = dayBlocks([...base, overlap], '2026-10-11');
+    expect(push.map(b => [b.id, b.timing.start])).toEqual([[occurrenceId(ruleId, '2026-10-11'), 600], ['existing', 630]]);
+    const freeRule = editDocument(base[0], ruleId, 'rule', { conflict: 'free' }, 'test');
+    expect(dayBlocks([freeRule, base[1], overlap], '2026-10-11').find(b => b.ruleId)!.timing.start).toBe(660);
+    const lateRule = editDocument(base[0], ruleId, 'rule', { start: 1410 }, 'test');
+    expect(dayBlocks([lateRule, base[1], doc(block('late', 1410, 30))], '2026-10-11').at(-1)!.timing.start).toBe(1440);
+  });
+  it('clearing a numeric result also clears its recorded value', () => {
+    expect(completionWithStatus({ status: 'done', value: 42 }, 'none')).toEqual({ status: 'none', value: 0 });
+    expect(completionWithStatus({ status: 'none', value: 12 }, 'done')).toEqual({ status: 'done', value: 12 });
   });
   it('uses the full swipe transition matrix', () => {
     for (const [current, right, left] of [['none', 'done', 'missed'], ['done', 'none', 'missed'], ['missed', 'done', 'none'], ['skip', 'done', 'missed']] as const) {
