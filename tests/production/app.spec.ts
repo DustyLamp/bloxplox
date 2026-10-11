@@ -53,6 +53,7 @@ test('offline writes persist and account-local databases are isolated', async ({
 test('swipes complete, mark not done and clear without opening the editor', async ({ page, context, isMobile }) => {
   await open(page); await addBlock(page, 'Swipe');
   await page.getByRole('button', { name: 'List', exact: true }).click();
+  await expect(page.locator('.bp2-list')).toBeVisible();
   const face = page.getByRole('button', { name: '08:00 Swipe 30m', exact: true });
   const cdp = isMobile ? await context.newCDPSession(page) : undefined;
   async function swipe(direction: number) {

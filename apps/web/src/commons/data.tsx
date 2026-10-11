@@ -23,6 +23,14 @@ export function DataProvider({ auth, identity, onSignOut, children }: { auth: Au
       dispose = async () => { subscription.unsubscribe(); await sync?.close(); await db.close(); };
       setSession({ db, sync });
       if (!sync) setStatus('offline');
+      const initializeSettings = async () => {
+        if (cancelled || await db.records.findOne('settings').exec()) return;
+        const settings = defaultSettings();
+        await writeRecord(db, 'settings', 'settings', settings);
+      };
+      // Pull an existing account's timezone before assigning this device's default.
+      if (sync) void sync.replication.awaitInitialReplication().then(initializeSettings).catch(() => {});
+      else await initializeSettings();
       // Stable defaults safely coalesce if two newly signed-in devices initialize together.
       const defaults = [
         ['personal', 'Personal', '#ff9b57'], ['work', 'Work', '#70b4ff'], ['learning', 'Learning', '#b48aff'],

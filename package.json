@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:prototype": "node scripts/test.mjs",
+    "test:live": "tsx tests/live/verify.ts",
     "test:e2e": "playwright test -c tests/production/playwright.config.ts",
     "test:install": "playwright install chromium webkit",
     "samples:export": "node scripts/export-samples.mjs",

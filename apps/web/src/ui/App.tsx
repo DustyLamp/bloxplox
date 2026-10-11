@@ -22,11 +22,15 @@ export function App() {
   const report = useCallback((message: string) => { setNotice(message); }, []);
   const go = (to: string) => { setMenu(false); setModal(null); void navigate({ to: `/${to}` }); };
   const run = (work: Promise<unknown>) => { void work.catch(e => report((e as Error).message)); };
+  useEffect(() => {
+    const prior = clock.current, today = localDate(settings.timezone);
+    setDate(current => current === prior ? today : current); clock.current = today;
+  }, [settings.timezone]);
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => { setNotice(''); setUndo(null); }, undo ? 10000 : 5000); return () => clearTimeout(timer); }, [notice, undo]);
   useEffect(() => {
     const timer = setInterval(() => {
       const today = localDate(settings.timezone);
-      if (clock.current !== today) { if (date === clock.current) setDate(today); clock.current = today; }
+      if (clock.current !== today) { if (date === clock.current) setDate(today); clock.current = today; setRolloverEpoch(n => n + 1); }
       const time = new Intl.DateTimeFormat('en-GB', { timeZone: settings.timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
       for (const h of dueHabits(docs, today)) {
         const key = `${h.id}:${today}`, result = getCompletion(docs, resultId(h.id, today));
@@ -47,7 +51,11 @@ export function App() {
     const b = due[0];
     void actions.place({ ...b, timing: { ...b.timing, date: today, start: settings.dayStart }, backlogDate: null }, 'free').then(() => { backlogBusy.current = false; setRolloverEpoch(n => n + 1); }).catch(e => { backlogBusy.current = false; report((e as Error).message); });
   }, [docs, settings.autoBacklog, settings.dayStart, settings.timezone, rolloverEpoch]);
-  const openRule = (block: Block) => setModal({ type: 'rule', block, rule: entities(docs, 'rule').find(r => r.id === block.ruleId) });
+  const applicableRule = (rules: Rule[]) => rules.filter(r => r.effectiveFrom <= date && (!r.recurrence.endDate || r.recurrence.endDate >= date)).sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0];
+  const openRule = (block: Block) => {
+    const rules = entities(docs, 'rule'), original = rules.find(r => r.id === block.ruleId);
+    setModal({ type: 'rule', block, rule: applicableRule(rules.filter(r => r.seriesId === original?.seriesId)) ?? original });
+  };
   return <div className="bp2-app"><DebossFilter/><header className="bp2-header">
     <button type="button" className="bp2-brand" aria-label="BloxPlox home" onClick={() => go('blocks')}><Logo/></button>
     <div className="bp2-switch" aria-label="Day view"><button type="button" aria-pressed={page === 'blocks'} onClick={() => go('blocks')}>Blocks</button><button type="button" aria-pressed={page === 'tracker'} onClick={() => go('tracker')}>Tracker</button></div>
@@ -69,10 +77,10 @@ export function App() {
     {!['blocks', 'tracker', 'backlog', 'categories', 'habits', 'history', 'settings'].includes(page) && <section className="bp2-content"><h1>Page not found</h1><Button onClick={() => go('blocks')}>Back to Blocks</Button></section>}
   </main>
   {modal?.type === 'calendar' && <Dialog title="Date" onClose={close}><Field label="Choose date"><input type="date" value={date} onChange={e => { if (e.target.value) setDate(e.target.value); }}/></Field><div className="bp2-actionrow"><Button onClick={() => { setDate(localDate(settings.timezone)); close(); }}>Today</Button><Button primary onClick={close}>Done</Button></div></Dialog>}
-  {modal?.type === 'block' && <BlockEditor key={modal.block.id} block={modal.block} onClose={close} schedule={openRule} move={block => setModal({ type: 'move', block })} removed={block => { setUndo(block); report('Block deleted'); }}/>} 
+  {modal?.type === 'block' && <BlockEditor key={modal.block.id} block={modal.block} onClose={close} schedule={openRule} move={block => setModal({ type: 'move', block })} removed={block => { setUndo(block); report('Block deleted'); }}/>}
   {modal?.type === 'move' && <MovePicker block={modal.block} onClose={close}/>}
   {modal?.type === 'habit' && <HabitEditor habit={modal.habit} date={date} onClose={close}/>}
-  {modal?.type === 'habit-menu' && modal.habit && <HabitMenu habit={modal.habit} date={date} onClose={close} edit={() => setModal({ type: 'habit', habit: modal.habit })} schedule={() => setModal({ type: 'rule', habit: modal.habit, rule: entities(docs, 'rule').find(r => r.habitId === modal.habit!.id) })} stats={() => { setStatsHabit(modal.habit); go('history'); }}/>} 
+  {modal?.type === 'habit-menu' && modal.habit && <HabitMenu habit={modal.habit} date={date} onClose={close} edit={() => setModal({ type: 'habit', habit: modal.habit })} schedule={() => setModal({ type: 'rule', habit: modal.habit, rule: applicableRule(entities(docs, 'rule').filter(r => r.habitId === modal.habit!.id)) })} stats={() => { setStatsHabit(modal.habit); go('history'); }}/>}
   {modal?.type === 'value' && modal.habit && <NumericResult habit={modal.habit} date={date} onClose={close}/>}
   {modal?.type === 'rule' && <RuleEditor key={modal.rule?.id ?? modal.block?.id ?? modal.habit?.id} {...modal} date={date} onClose={close}/>}
   {(notice || error) && <div className="bp2-toast" role={error ? 'alert' : 'status'}>{error || notice}{undo && <button onClick={() => { run(actions.saveBlock(undo, false)); setUndo(null); report('Block restored'); }}>Undo</button>}{error && <button onClick={clearError}>Dismiss</button>}</div>}
