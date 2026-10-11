@@ -23,9 +23,9 @@ export function Auth({ auth, onSignedIn }: { auth: AuthService; onSignedIn: () =
   return <main className="auth-shell"><Logo/><section className="auth-card"><h1>{title}</h1>
     <form onSubmit={submit}>
       <Field label="Email"><input type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)}/></Field>
-      {['signin', 'signup', 'reset'].includes(mode) && <Field label="Password"><input type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} required minLength={mode === 'signin' ? 1 : 12} value={password} onChange={e => setPassword(e.target.value)}/></Field>}
+      {['signin', 'signup', 'reset'].includes(mode) && <Field label="Password"><input type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} required minLength={mode === 'signin' ? 1 : 8} value={password} onChange={e => setPassword(e.target.value)}/></Field>}
       {['verify', 'reset'].includes(mode) && <Field label="Verification code"><input autoComplete="one-time-code" inputMode="numeric" required value={code} onChange={e => setCode(e.target.value)}/></Field>}
-      {['signup', 'reset'].includes(mode) && <p className="bp2-muted">Use at least 12 characters, including upper and lowercase letters and a number.</p>}
+      {['signup', 'reset'].includes(mode) && <p className="bp2-muted">Use at least 8 characters, including one uppercase letter and one number.</p>}
       <ErrorText message={error}/>{notice && <p role="status" className="auth-notice">{notice}</p>}
       <Button type="submit" primary disabled={busy} className="bp2-full">{busy ? 'Please wait…' : title}</Button>
     </form>

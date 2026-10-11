@@ -35,7 +35,7 @@ export class ApplicationStack extends Stack {
       userPoolName: 'bloxplox-production', selfSignUpEnabled: true, signInAliases: { email: true },
       signInCaseSensitive: false, autoVerify: { email: true },
       standardAttributes: { email: { required: true, mutable: true } },
-      passwordPolicy: { minLength: 12, requireLowercase: true, requireUppercase: true, requireDigits: true, requireSymbols: false },
+      passwordPolicy: { minLength: 8, requireLowercase: false, requireUppercase: true, requireDigits: true, requireSymbols: false },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY, mfa: cognito.Mfa.OPTIONAL, mfaSecondFactor: { sms: false, otp: true },
       removalPolicy: RemovalPolicy.RETAIN, deletionProtection: true,
       userVerification: { emailSubject: 'Verify your BloxPlox email', emailBody: 'Your BloxPlox verification code is {####}.', emailStyle: cognito.VerificationEmailStyle.CODE },
