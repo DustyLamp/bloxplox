@@ -25,8 +25,14 @@ export const completionSchema = z.object({
 export const categorySchema = z.object({ name, color: z.string().regex(/^#[0-9a-fA-F]{6}$/) }).strict();
 export const blockSchema = z.object({
   name, timing: timingSchema, categories: z.array(id).max(12), activities: z.array(name).max(20),
+  thingIds: z.array(id).max(100).optional(),
   habitId: id.nullable(), resultDate: dateSchema, ruleId: id.nullable(), occurrenceDate: dateSchema.nullable(),
   order: z.number().finite(), notes: z.string().max(2000), backlogDate: dateSchema.nullable(),
+}).strict();
+export const thingSchema = z.object({
+  name, notes: z.string().max(2000), categories: z.array(id).max(12),
+  estimate: z.number().int().min(1).max(1440).nullable(), dueDate: dateSchema.nullable(),
+  completedOn: dateSchema.nullable(), order: z.number().finite(),
 }).strict();
 export const habitSchema = z.object({
   name, description: z.string().max(500), type: z.enum(['binary', 'value']),
@@ -47,15 +53,17 @@ export const settingsSchema = z.object({
 
 export type Category = z.infer<typeof categorySchema> & { id: string };
 export type Block = z.infer<typeof blockSchema> & { id: string };
+export type Thing = z.infer<typeof thingSchema> & { id: string };
 export type Habit = z.infer<typeof habitSchema> & { id: string };
 export type Rule = z.infer<typeof ruleSchema> & { id: string };
 export type Result = z.infer<typeof resultSchema> & { id: string };
 export type Settings = z.infer<typeof settingsSchema>;
 export type Completion = z.infer<typeof completionSchema>;
 export type Recurrence = z.infer<typeof recurrenceSchema>;
-export type Kind = 'category' | 'block' | 'habit' | 'rule' | 'result' | 'settings';
+export type Kind = 'category' | 'block' | 'thing' | 'habit' | 'rule' | 'result' | 'settings';
 export type DataByKind = {
   category: Omit<Category, 'id'>; block: Omit<Block, 'id'>; habit: Omit<Habit, 'id'>;
+  thing: Omit<Thing, 'id'>;
   rule: Omit<Rule, 'id'>; result: Omit<Result, 'id'>; settings: Settings;
 };
 export type Stamp = { counter: number; actor: string };
@@ -63,9 +71,9 @@ export type Document = {
   id: string; kind: Kind; data: Record<string, unknown>; clocks: Record<string, Stamp>;
   deleted: boolean; revision: string;
 };
-const schemas = { category: categorySchema, block: blockSchema, habit: habitSchema, rule: ruleSchema, result: resultSchema, settings: settingsSchema };
+const schemas = { category: categorySchema, block: blockSchema, thing: thingSchema, habit: habitSchema, rule: ruleSchema, result: resultSchema, settings: settingsSchema };
 export const documentSchema = z.object({
-  id, kind: z.enum(['category', 'block', 'habit', 'rule', 'result', 'settings']),
+  id, kind: z.enum(['category', 'block', 'thing', 'habit', 'rule', 'result', 'settings']),
   data: z.record(z.string(), z.unknown()),
   clocks: z.record(z.string().regex(/^[a-zA-Z]+$/), z.object({ counter: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER - 1000), actor: id }).strict()),
   deleted: z.boolean(), revision: id,

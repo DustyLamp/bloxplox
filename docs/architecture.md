@@ -36,12 +36,14 @@ A series has stable occurrence IDs even when its rule is versioned. Editing a re
 
 History derives from actual records. Category time divides a completed block's duration equally across its categories. Deactivated habits retain recorded results; unrecorded dates follow the current habit weekday settings. Numeric values, explicit not-done and skip are separate states.
 
+Things are independent, non-recurring documents. Blocks optionally reference their IDs, and completion is a nullable calendar date on the Thing itself. This keeps a task's completion shared across sessions while a block's result measures its session separately. Rename/notes and completion merge independently. Task deletion hides it from every checklist without deleting sessions; session deletion leaves tasks intact. Recurring sessions never automatically copy one-off task references into future occurrences.
+
 ## Delivery and operation
 
 The CDK pipeline uses a GitHub source secret, CodeBuild tests and synthesis, a production stage, and a post-deployment Amplify publish step. It is self-mutating. The app stack defines Cognito, DynamoDB, Lambda, HTTP/WebSocket APIs, Streams handling, a dead-letter queue/alarm, Amplify hosting, and the Route53-managed custom-domain association. HTTP and WebSocket stages have throttles. CSP restricts network/script origins; fonts are local.
 
 The generated service worker caches the application shell and runtime configuration, never authenticated API responses. After the first online load, an already signed-in account can reopen and edit offline. A waiting update activates when the old app tabs close. Browser data clearing removes unsent changes; Export data is available in Settings.
 
-Pinned CDK versions (registry checked 2026-10-11): library 2.273.0 and CLI 2.1145.0. The different version numbers are intentional. Schema version 0 is the initial production schema; future data changes must add RxDB migrations without resetting local storage.
+Pinned CDK versions (registry checked 2026-10-11): library 2.273.0 and CLI 2.1145.0. The different version numbers are intentional. RxDB schema version 0 stores an extensible record envelope; adding Things and optional block references preserves that envelope and all existing records. Changes to the storage envelope require RxDB migrations without resetting local storage.
 
 Open-app reminders are supported; closed-app push/email reminders are not scheduled. DynamoDB change-log retention is currently indefinite. Monitor table growth and notification dead letters before introducing retention or compaction.

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Check, X, GripVertical, Link, Repeat, Plus, Minus } from 'lucide-react';
-import { blockResultId, completionWithStatus, dayBlocks, dueHabits, entities, formatDuration, formatTime, getCompletion, insertBlock, resultId, type Block, type Habit } from '../../../../../packages/domain/src/index';
+import { blockResultId, completionWithStatus, dayBlocks, dueHabits, entities, formatDuration, formatTime, getCompletion, insertBlock, resultId, thingsInBlock, type Block, type Habit } from '../../../../../packages/domain/src/index';
 import { useData, useSettings } from '../../commons/data';
 import { useActions } from '../../domain/actions';
 import { Swipe } from './Swipe';
@@ -52,7 +52,7 @@ export function Blocks({ date, edit, add, movePicker, report }: { date: string; 
     const style = { background: b ? fill(b.categories) : undefined, gridColumn: `span ${length / 15}`, '--bp2-drop-x': `${moving?.start ? (moving.start - slotStart) / length * 100 : 0}%` } as CSSProperties;
     const face = <button type="button" className="bp2-face" onClick={() => b ? edit(b) : add(slotStart)} data-open={b?.id} aria-label={b ? `${formatTime(slotStart)} ${b.name} ${formatDuration(b.timing.duration)}` : `Available ${formatTime(slotStart)} ${formatDuration(length)}`}>
       <span className="bp2-time">{formatTime(slotStart)}{b?.habitId && <span className="bp2-linkicon" aria-label="Linked habit">{b.ruleId ? <Repeat/> : <Link/>}</span>}</span><span className="bp2-name">{b?.name ?? 'Available'}</span>
-      {b && <span className="bp2-meta">{formatDuration(resize?.id === b.id ? resize.next : b.timing.duration)}</span>}
+      {b && <span className="bp2-meta">{formatDuration(resize?.id === b.id ? resize.next : b.timing.duration)}{thingsInBlock(docs, b).length > 0 && <span className="block-things"> · {thingsInBlock(docs, b).filter(t => t.completedOn).length}/{thingsInBlock(docs, b).length} things</span>}</span>}
       {['done', 'missed'].includes(status) && <span className="bp2-completionstamp" role="img" aria-label={status === 'done' ? 'Completed' : 'Not done'}>{status === 'done' ? <Check/> : <X/>}</span>}
     </button>;
     if (!b) return <div key={key} className={className} style={style} data-block="available" data-slot-start={slotStart} data-slot-minutes={length}><div className="bp2-cardclip">{face}</div></div>;

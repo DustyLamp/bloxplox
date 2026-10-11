@@ -1,9 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { blockResultId, categoryMinutes, completionStats, completionWithStatus, dayBlocks, documentSchema, editDocument, getCompletion, insertBlock, localDate, matchesRecurrence, mergeDocuments, occurrenceId, resultId, sameContent, shiftDate, swipeStatus, type Block, type Document, type Recurrence, type Rule } from './index';
+import { blockResultId, categoryMinutes, completionStats, completionWithStatus, dayBlocks, documentSchema, editDocument, getCompletion, insertBlock, localDate, matchesRecurrence, mergeDocuments, occurrenceId, resultId, sameContent, shiftDate, swipeStatus, thingsInBlock, thingSessions, thingBlockDuration, type Block, type Document, type Recurrence, type Rule } from './index';
 
 const recurrence: Recurrence = { startDate: '2026-01-31', endDate: null, repeat: 'monthly', weekdays: [0, 2, 4], interval: 2, monthDay: 31, timezone: 'Europe/Zurich' };
 const block = (id: string, start = 480, duration = 60): Block => ({ id, name: id, timing: { date: '2026-10-11', start, duration }, categories: ['work'], activities: [], habitId: null, resultDate: '2026-10-11', ruleId: null, occurrenceDate: null, order: 0, notes: '', backlogDate: null });
 const doc = (b: Block) => { const { id, ...data } = b; return editDocument(undefined, id, 'block', data, 'test'); };
+describe('one-off things', () => {
+  const thing = editDocument(undefined, 'todo', 'thing', { name: 'Renew passport', notes: '', estimate: 20, dueDate: null, completedOn: null, categories: [], order: 0 }, 'device-a');
+  it('keeps one completion across sessions, excludes deleted tasks and retains tasks when a session is removed', () => {
+    const first = { ...block('first'), thingIds: ['todo', 'todo'] }, second = { ...block('second'), thingIds: ['todo'] };
+    const done = editDocument(thing, thing.id, 'thing', { completedOn: '2026-10-11' }, 'device-a');
+    const docs = [done, doc(first), doc(second)];
+    expect(documentSchema.safeParse(done).success).toBe(true);
+    expect(thingsInBlock(docs, first)).toHaveLength(1);
+    expect(thingsInBlock(docs, second)[0].completedOn).toBe('2026-10-11');
+    docs[1] = editDocument(docs[1], first.id, 'block', {}, 'device-a', true);
+    expect(thingSessions(docs, 'todo').map(b => b.id)).toEqual(['second']);
+    expect(thingsInBlock(docs, second)[0].name).toBe('Renew passport');
+    docs[0] = editDocument(done, thing.id, 'thing', {}, 'device-a', true);
+    expect(thingsInBlock(docs, second)).toEqual([]);
+  });
+  it('merges an offline completion with an independent edit and rounds the session estimate once', () => {
+    const renamed = editDocument(thing, thing.id, 'thing', { name: 'Passport appointment' }, 'device-a');
+    const completed = editDocument(thing, thing.id, 'thing', { completedOn: '2026-10-11' }, 'device-b');
+    const merged = mergeDocuments(renamed, completed);
+    expect(merged.data).toMatchObject({ name: 'Passport appointment', completedOn: '2026-10-11' });
+    const [t] = thingsInBlock([merged], { thingIds: [thing.id] });
+    expect(thingBlockDuration([t, { ...t, id: 'two', estimate: 10 }])).toBe(30);
+    expect(thingBlockDuration([{ ...t, estimate: null }])).toBe(15);
+  });
+});
 describe('calendar recurrence', () => {
   it('clamps month end, including leap years, without drifting the next month', () => {
     expect(matchesRecurrence(recurrence, '2026-02-28')).toBe(true);

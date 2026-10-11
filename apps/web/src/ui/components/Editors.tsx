@@ -5,6 +5,7 @@ import { useData, useSettings } from '../../commons/data';
 import { useActions } from '../../domain/actions';
 import { Button, Dialog, ErrorText, Field, Select } from './common';
 import { useCategoryFill } from './Boards';
+import { ThingPicker } from './ThingPicker';
 
 function useSubmit(onClose?: () => void) {
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
@@ -31,13 +32,14 @@ export function BlockEditor({ block, onClose, schedule, move, removed }: { block
     <Field label="Name"><input autoFocus required value={draft.name} maxLength={120} onChange={e => setDraft({ ...draft, name: e.target.value })}/></Field>
     <div className="bp2-fields"><Field label="Start time"><input type="time" step="900" required value={formatTime(draft.timing.start)} onChange={e => setDraft({ ...draft, timing: { ...draft.timing, start: parseTime(e.target.value) } })}/></Field><Field label="Duration (minutes)"><input type="number" min="15" max="1440" step="15" required value={draft.timing.duration} onChange={e => setDraft({ ...draft, timing: { ...draft.timing, duration: Number(e.target.value) } })}/></Field></div>
     <CategoryPicker selected={draft.categories} onChange={categories => setDraft({ ...draft, categories })}/>
+    <ThingPicker selected={draft.thingIds ?? []} onChange={thingIds => setDraft({ ...draft, thingIds })}/>
     <details className="bp2-settings"><summary>Settings</summary><Field label="Date"><input type="date" required value={draft.timing.date ?? draft.resultDate} onChange={e => setDraft({ ...draft, timing: { ...draft.timing, date: e.target.value }, resultDate: draft.ruleId ? draft.resultDate : e.target.value })}/></Field>
       <Field label="Linked habit"><Select value={draft.habitId ?? ''} onChange={e => setDraft({ ...draft, habitId: e.target.value || null })}><option value="">None</option>{entities(docs, 'habit').map(h => <option key={h.id} value={h.id}>{h.name}</option>)}</Select></Field>
       <Field label="Activities (one per line)"><textarea rows={3} value={draft.activities.join('\n')} onChange={e => setDraft({ ...draft, activities: e.target.value.split('\n') })}/></Field>
       <Field label="Notes"><textarea rows={3} maxLength={2000} value={draft.notes} onChange={e => setDraft({ ...draft, notes: e.target.value })}/></Field>
     </details>
     {conflict && <section className="conflict-panel" aria-label="Overlap"><h3>Overlapping blocks</h3>{clashes.map(b => <p key={b.id}>{b.name} · {formatTime(b.timing.start)}</p>)}<Field label="Placement"><Select value={policy} onChange={e => setPolicy(e.target.value as 'push' | 'free')}><option value="push">Push following blocks</option><option value="free">Find another time</option></Select></Field>
-      {clashes.length === 1 && <Button onClick={() => void run(async () => { const other = clashes[0]; await actions.saveBlock({ ...other, name: `${other.name} + ${draft.name}`.slice(0, 120), activities: [...new Set([...other.activities, other.name, ...draft.activities, draft.name])], categories: [...new Set([...other.categories, ...draft.categories])] }); if (existing) await actions.saveBlock(block, true); })}>Merge activities into {clashes[0].name}</Button>}
+      {clashes.length === 1 && <Button onClick={() => void run(async () => { const other = clashes[0]; await actions.saveBlock({ ...other, name: `${other.name} + ${draft.name}`.slice(0, 120), activities: [...new Set([...other.activities, other.name, ...draft.activities, draft.name])], categories: [...new Set([...other.categories, ...draft.categories])], thingIds: [...new Set([...(other.thingIds ?? []), ...(draft.thingIds ?? [])])] }); if (existing) await actions.saveBlock(block, true); })}>Merge activities into {clashes[0].name}</Button>}
       <Button onClick={() => setConflict(false)}>Edit block</Button><Button onClick={() => void run(() => actions.saveBlock({ ...draft, timing: { ...draft.timing, date: null }, activities: draft.activities.filter(Boolean) }))}>Add to backlog</Button>
     </section>}
     <ErrorText message={error}/><Button type="submit" primary className="bp2-full" disabled={busy}>{busy ? 'Saving…' : conflict ? 'Place block' : 'Save'}</Button>
@@ -102,7 +104,13 @@ export function RuleEditor({ habit, block, rule, date, onClose }: { habit?: Habi
     if (block && !block.ruleId && block.timing.date && matchesRecurrence(nextRule.recurrence, block.timing.date)) {
       const result = getCompletion(docs, blockResultId(block));
       await actions.saveBlock(block, true);
-      if (result.status !== 'none') { const occurrence = instantiate(nextRule, block.timing.date); await actions.saveBlock(occurrence); await actions.complete(occurrence.habitId ?? occurrence.id, occurrence.resultDate, result); }
+      // Keep the original session's tasks and notes on its first occurrence only.
+      // One-off work must not be copied into every future session of a recurrence.
+      if (result.status !== 'none' || block.thingIds?.length || block.notes || block.activities.length) {
+        const occurrence = { ...instantiate(nextRule, block.timing.date), thingIds: block.thingIds ?? [], notes: block.notes, activities: block.activities };
+        await actions.saveBlock(occurrence);
+        if (result.status !== 'none') await actions.complete(occurrence.habitId ?? occurrence.id, occurrence.resultDate, result);
+      }
     }
   }); }}>
     {habit && !rule && <Field label="Placement"><Select value={linkId} onChange={e => setLinkId(e.target.value)}><option value="">New block</option>{dayBlocks(docs, date).filter(b => !b.habitId || b.habitId === habit.id).map(b => <option key={b.id} value={b.id}>Link to {b.name} · {formatTime(b.timing.start)}</option>)}</Select></Field>}

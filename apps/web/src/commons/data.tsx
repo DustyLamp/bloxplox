@@ -1,10 +1,10 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { defaultSettings, documentSchema, editDocument, entities, type DataByKind, type Document, type Kind } from '../../../../packages/domain/src/index';
 import { openDatabase, startSync, wireDocument, writeRecord, type Database, type SyncStatus } from '../../../../packages/sync/src/index';
 import type { AuthService } from '../domain/auth';
 
 interface DataContextValue {
-  docs: Document[]; status: SyncStatus; save: <K extends Kind>(id: string, kind: K, data: Partial<DataByKind[K]>, deleted?: boolean) => Promise<void>;
+  docs: Document[]; status: SyncStatus; saving: boolean; save: <K extends Kind>(id: string, kind: K, data: Partial<DataByKind[K]>, deleted?: boolean) => Promise<void>;
   sync: () => void; signOut: () => Promise<void>; email: string; error: string; clearError: () => void;
 }
 const Context = createContext<DataContextValue | null>(null);
@@ -13,6 +13,12 @@ export const useData = () => { const value = useContext(Context); if (!value) th
 export function DataProvider({ auth, identity, onSignOut, children }: { auth: AuthService; identity: { subject: string; email: string }; onSignOut: () => void; children: ReactNode }) {
   const [docs, setDocs] = useState<Document[]>([]), [status, setStatus] = useState<SyncStatus>('syncing');
   const [session, setSession] = useState<{ db: Database; sync?: ReturnType<typeof startSync> }>(), [error, setError] = useState('');
+  const pendingWrites = useRef(new Set<Promise<unknown>>()), [saving, setSaving] = useState(false);
+  useEffect(() => {
+    const guard = (event: BeforeUnloadEvent) => { if (pendingWrites.current.size) { event.preventDefault(); event.returnValue = ''; } };
+    window.addEventListener('beforeunload', guard);
+    return () => window.removeEventListener('beforeunload', guard);
+  }, []);
   useEffect(() => {
     let cancelled = false, dispose: (() => Promise<void>) | undefined;
     void (async () => {
@@ -47,10 +53,14 @@ export function DataProvider({ auth, identity, onSignOut, children }: { auth: Au
   }, [auth, identity.subject]);
   const save: DataContextValue['save'] = async (id, kind, data, deleted) => {
     if (!session) throw new Error('Still opening storage');
-    try { await writeRecord(session.db, id, kind, data, deleted); }
+    const write = writeRecord(session.db, id, kind, data, deleted);
+    pendingWrites.current.add(write); setSaving(true);
+    try { await write; }
     catch (err) { const message = err instanceof Error ? err.message : 'Could not save'; setError(message); throw err; }
+    finally { pendingWrites.current.delete(write); setSaving(pendingWrites.current.size > 0); }
   };
   const signOut = async () => {
+    await Promise.all([...pendingWrites.current]);
     await session?.sync?.close();
     auth.signOut(); onSignOut();
   };
@@ -60,7 +70,7 @@ export function DataProvider({ auth, identity, onSignOut, children }: { auth: Au
     return () => channel.close();
   }, [session, onSignOut]);
   if (!session) return <main className="loading" role="status">{error || 'Opening BloxPlox…'}</main>;
-  return <Context.Provider value={{ docs, status, save, sync: () => session.sync?.resync(), signOut, email: identity.email, error, clearError: () => setError('') }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ docs, status, saving, save, sync: () => session.sync?.resync(), signOut, email: identity.email, error, clearError: () => setError('') }}>{children}</Context.Provider>;
 }
 export function useSettings() {
   const { docs, save } = useData();

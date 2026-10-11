@@ -1,6 +1,6 @@
 # BloxPlox
 
-Daily blocks and habit tracking with shared completion history. The React application lives in `apps/web`; the approved design remains runnable in `apps/prototype`.
+Daily Blocks, recurring habits in Tracker, and one-off tasks in Things. Plan sessions containing several Things, with shared task completion wherever they appear. The React application lives in `apps/web`; the approved design remains runnable in `apps/prototype`.
 
 ## Development
 
