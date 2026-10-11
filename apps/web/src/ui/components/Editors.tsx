@@ -89,12 +89,13 @@ export function NumericResult({ habit, date, onClose }: { habit: Habit; date: st
 export function RuleEditor({ habit, block, rule, date, onClose }: { habit?: Habit; block?: Block; rule?: Rule; date: string; onClose: () => void }) {
   const { docs, save } = useData(), { settings } = useSettings(), actions = useActions(), { error, busy, run } = useSubmit(onClose);
   const [linkId, setLinkId] = useState('');
-  const [draft, setDraft] = useState<Rule>(rule ?? { id: crypto.randomUUID(), name: habit?.name ?? block?.name ?? '', habitId: habit?.id ?? block?.habitId ?? null, categories: habit?.categories.length ? habit.categories : block?.categories ?? ['category:personal'], effectiveFrom: date, start: block?.timing.start ?? Math.min(1425, Math.round(parseTime(habit?.reminder || '08:30') / 15) * 15), duration: block?.timing.duration ?? 30, conflict: 'push', recurrence: { startDate: date, endDate: null, repeat: 'once', weekdays: [0, 2, 4], interval: 2, monthDay: Number(date.slice(-2)), timezone: settings.timezone } });
+  const [seriesId] = useState(() => crypto.randomUUID());
+  const [draft, setDraft] = useState<Rule>(rule ?? { id: seriesId, seriesId, name: habit?.name ?? block?.name ?? '', habitId: habit?.id ?? block?.habitId ?? null, categories: habit?.categories.length ? habit.categories : block?.categories ?? ['category:personal'], effectiveFrom: date, start: block?.timing.start ?? Math.min(1425, Math.round(parseTime(habit?.reminder || '08:30') / 15) * 15), duration: block?.timing.duration ?? 30, conflict: 'push', recurrence: { startDate: date, endDate: null, repeat: 'once', weekdays: [0, 2, 4], interval: 2, monthDay: Number(date.slice(-2)), timezone: settings.timezone } });
   const r = draft.recurrence, patch = (value: Partial<Rule['recurrence']>) => setDraft({ ...draft, recurrence: { ...r, ...value } });
   return <Dialog title={rule ? 'Edit recurrence' : `Schedule ${draft.name}`} onClose={onClose}><form onSubmit={e => { e.preventDefault(); void run(async () => {
     if (linkId) { const b = dayBlocks(docs, date).find(b => b.id === linkId)!; await actions.link(b, habit!.id); return; }
     const split = !!rule && rule.recurrence.startDate < date && rule.effectiveFrom < date;
-    const nextRule = { ...draft, id: split ? crypto.randomUUID() : draft.id, effectiveFrom: split ? date : draft.effectiveFrom };
+    const nextRule = { ...draft, id: split ? `rule:${draft.seriesId}:${date}` : draft.id, effectiveFrom: split ? date : draft.effectiveFrom };
     const { id, ...data } = nextRule;
     if (split) await save(rule!.id, 'rule', { recurrence: { ...rule!.recurrence, endDate: shiftDate(date, -1) } });
     await save(id, 'rule', rule && !split ? changedFields(rule, data) : data);
@@ -113,7 +114,7 @@ export function RuleEditor({ habit, block, rule, date, onClose }: { habit?: Habi
       {r.repeat !== 'once' && <Field label="Ends (optional)"><input type="date" min={r.startDate} value={r.endDate ?? ''} onChange={e => patch({ endDate: e.target.value || null })}/></Field>}
       <CategoryPicker selected={draft.categories} onChange={categories => setDraft({ ...draft, categories })}/>
       <Field label="If the time is occupied"><Select value={draft.conflict} onChange={e => setDraft({ ...draft, conflict: e.target.value as Rule['conflict'] })}><option value="push">Push following blocks</option><option value="free">Next available</option></Select></Field>
-      <Field label="Timezone"><Select value={r.timezone} onChange={e => patch({ timezone: e.target.value })}>{[...new Set([r.timezone, ...Intl.supportedValuesOf('timeZone')])].map(tz => <option key={tz}>{tz}</option>)}</Select></Field>
+      <p className="bp2-muted">Times follow your schedule’s local clock, including daylight-saving changes.</p>
     </>}
     <ErrorText message={error}/><Button type="submit" primary disabled={busy} className="bp2-full">{linkId ? 'Link habit' : 'Save schedule'}</Button>
   </form>{rule && <Button className="bp2-full danger" onClick={() => void run(() => rule.recurrence.startDate < date ? save(rule.id, 'rule', { recurrence: { ...rule.recurrence, endDate: shiftDate(date, -1) } }) : save(rule.id, 'rule', {}, true))}>Stop recurrence from this day</Button>}</Dialog>;

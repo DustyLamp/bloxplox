@@ -12,7 +12,7 @@ export function swipeStatus(status: Completion['status'], direction: 'right' | '
   return status === target ? 'none' : target;
 }
 export function instantiate(rule: Rule, date: string): Block {
-  return { id: occurrenceId(rule.id, date), name: rule.name, timing: { date, start: rule.start, duration: rule.duration },
+  return { id: occurrenceId(rule.seriesId, date), name: rule.name, timing: { date, start: rule.start, duration: rule.duration },
     categories: rule.categories, activities: [], habitId: rule.habitId, resultDate: date,
     ruleId: rule.id, occurrenceDate: date, order: 0, notes: '', backlogDate: null };
 }
@@ -23,7 +23,7 @@ export function dayBlocks(docs: Document[], date: string): Block[] {
   for (const rule of entities(docs, 'rule').sort((a, b) => a.id.localeCompare(b.id))) {
     if (date < rule.effectiveFrom) continue;
     if (rule.habitId && !habits.some(h => h.id === rule.habitId && h.active)) continue;
-    if (matchesRecurrence(rule.recurrence, date) && !ids.has(occurrenceId(rule.id, date))) {
+    if (matchesRecurrence(rule.recurrence, date) && !ids.has(occurrenceId(rule.seriesId, date))) {
       const generated = instantiate(rule, date);
       if (rule.conflict === 'free') generated.timing.start = nextSpace(blocks, generated.timing.start, generated.timing.duration);
       blocks.push(generated);
@@ -65,7 +65,7 @@ export function insertBlock(blocks: Block[], block: Block, policy: 'push' | 'fre
 }
 export function dueHabits(docs: Document[], date: string): Habit[] {
   const blocks = dayBlocks(docs, date);
-  return entities(docs, 'habit').filter(h => h.startDate <= date && h.active && (h.weekdays.includes(weekday(date)) || blocks.some(b => b.habitId === h.id)));
+  return entities(docs, 'habit').filter(h => h.startDate <= date && (h.active && (h.weekdays.includes(weekday(date)) || blocks.some(b => b.habitId === h.id)) || getCompletion(docs, resultId(h.id, date)).status !== 'none'));
 }
 export function completionStats(docs: Document[], date: string) {
   const keys = new Set(dayBlocks(docs, date).filter(b => b.timing.start < 1440).map(blockResultId));

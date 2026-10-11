@@ -59,6 +59,8 @@ export class AuthService {
   signOut() {
     this.pool?.getCurrentUser()?.signOut();
     localStorage.removeItem(`bloxplox-session:${this.config.userPoolId}`);
-    new BroadcastChannel('bloxplox-auth').postMessage('signed-out');
+    const channel = new BroadcastChannel('bloxplox-auth');
+    channel.postMessage('signed-out');
+    channel.close();
   }
 }

@@ -1,1 +1,7 @@
-{"name":"@bloxplox/sync","version":"1.0.0","private":true,"type":"module","exports":"./src/index.ts"}
+{
+  "name": "@bloxplox/sync",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts"
+}

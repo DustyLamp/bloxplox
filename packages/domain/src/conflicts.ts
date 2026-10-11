@@ -10,7 +10,7 @@ export const sameContent = (a: Document, b: Document) => a.id === b.id && a.kind
 export function changedFields<T extends object>(before: T, after: T): Partial<T> {
   return Object.fromEntries(Object.entries(after).filter(([key, value]) => key !== 'id' && canonical(value) !== canonical((before as Record<string, unknown>)[key]))) as Partial<T>;
 }
-const compare = (a: Stamp, b: Stamp) => a.counter - b.counter || a.actor.localeCompare(b.actor, 'en');
+const compare = (a: Stamp, b: Stamp) => a.counter - b.counter || (a.actor < b.actor ? -1 : a.actor > b.actor ? 1 : 0);
 
 /** A field is an atomic value: timing and completion cannot be split by a merge. */
 export function mergeDocuments(master: Document, local: Document): Document {

@@ -30,7 +30,7 @@ describe('calendar recurrence', () => {
   });
 });
 describe('stable occurrences and shared completion', () => {
-  const rule: Rule = { id: 'rule-1', name: 'Read', habitId: 'habit-1', categories: ['reading'], effectiveFrom: recurrence.startDate, recurrence: { ...recurrence, repeat: 'daily' }, start: 600, duration: 30, conflict: 'push' };
+  const rule: Rule = { id: 'rule-1', seriesId: 'rule-1', name: 'Read', habitId: 'habit-1', categories: ['reading'], effectiveFrom: recurrence.startDate, recurrence: { ...recurrence, repeat: 'daily' }, start: 600, duration: 30, conflict: 'push' };
   const { id: ruleId, ...ruleData } = rule;
   const base = [editDocument(undefined, ruleId, 'rule', ruleData, 'test'), editDocument(undefined, 'habit-1', 'habit', { name: 'Read', description: '', type: 'binary', target: 1, unit: '', active: true, weekdays: [0,1,2,3,4,5,6], startDate: '2026-01-01', reminder: '', categories: ['reading'] }, 'test')];
   it('does not write when projecting and never generates a moved or deleted occurrence twice', () => {
@@ -52,6 +52,21 @@ describe('stable occurrences and shared completion', () => {
     expect(getCompletion(docs, blockResultId(dayBlocks(docs, '2026-10-11')[0])).status).toBe('done');
     docs[2] = editDocument(result, result.id, 'result', { completion: { status: 'skip', value: 0 } }, 'test');
     expect(completionStats(docs, '2026-10-11')).toEqual({ total: 0, done: 0, skipped: 1 });
+  });
+  it('keeps occurrence exceptions and earlier history across a new rule version', () => {
+    const old = editDocument(base[0], ruleId, 'rule', { recurrence: { ...rule.recurrence, endDate: '2026-10-11' } }, 'test');
+    const next = editDocument(undefined, 'version-2', 'rule', { ...ruleData, effectiveFrom: '2026-10-12', start: 660 }, 'test');
+    const exception = dayBlocks(base, '2026-10-13')[0];
+    const docs = [old, next, base[1], doc({ ...exception, timing: { ...exception.timing, date: null } })];
+    expect(dayBlocks(docs, '2026-10-11')[0].timing.start).toBe(600);
+    expect(dayBlocks(docs, '2026-10-12')[0].timing.start).toBe(660);
+    expect(dayBlocks(docs, '2026-10-12')[0].id).toBe(occurrenceId(ruleId, '2026-10-12'));
+    expect(dayBlocks(docs, '2026-10-13')).toHaveLength(0);
+  });
+  it('retains recorded habit history after deactivation', () => {
+    const habit = editDocument(base[1], 'habit-1', 'habit', { active: false }, 'test');
+    const result = editDocument(undefined, resultId('habit-1', '2026-10-11'), 'result', { subjectId: 'habit-1', date: '2026-10-11', completion: { status: 'done', value: 0 } }, 'test');
+    expect(completionStats([habit, result], '2026-10-11')).toEqual({ done: 1, total: 1, skipped: 0 });
   });
   it('uses the full swipe transition matrix', () => {
     for (const [current, right, left] of [['none', 'done', 'missed'], ['done', 'none', 'missed'], ['missed', 'done', 'none'], ['skip', 'done', 'missed']] as const) {

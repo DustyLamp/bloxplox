@@ -10,15 +10,17 @@ export function Swipe({ status, children, className = '', onStatus, onHold, onMo
 }) {
   const [dx, setDx] = useState(0), [settling, setSettling] = useState(false);
   const ref = useRef<HTMLDivElement>(null), suppress = useRef(false);
+  const callbacks = useRef({ onMove, onCancel });
+  callbacks.current = { onMove, onCancel };
   const gesture = useRef<{ x: number; y: number; mode: 'pending' | 'swipe' | 'move'; timer?: ReturnType<typeof setTimeout>; pointer: number } | null>(null);
   const target = swipeStatus(status, dx >= 0 ? 'right' : 'left');
   const Icon = target === 'done' ? Check : target === 'missed' ? X : BrushCleaning;
   useEffect(() => {
-    const cancel = (e: KeyboardEvent) => { if (e.key === 'Escape') { clearTimeout(gesture.current?.timer); gesture.current = null; setDx(0); suppress.current = true; onCancel?.(); setTimeout(() => { suppress.current = false; }, 100); } };
-    const touch = (e: TouchEvent) => { if (gesture.current?.mode === 'move') { e.preventDefault(); if (e.touches[0]) onMove?.(e.touches[0].clientX, e.touches[0].clientY); } };
+    const cancel = (e: KeyboardEvent) => { if (e.key === 'Escape') { clearTimeout(gesture.current?.timer); gesture.current = null; setDx(0); suppress.current = true; callbacks.current.onCancel?.(); setTimeout(() => { suppress.current = false; }, 100); } };
+    const touch = (e: TouchEvent) => { if (gesture.current?.mode === 'move') { e.preventDefault(); if (e.touches[0]) callbacks.current.onMove?.(e.touches[0].clientX, e.touches[0].clientY); } };
     document.addEventListener('keydown', cancel); const el = ref.current!; el.addEventListener('touchmove', touch, { passive: false });
     return () => { document.removeEventListener('keydown', cancel); el.removeEventListener('touchmove', touch); clearTimeout(gesture.current?.timer); };
-  }, [onCancel, onMove]);
+  }, []);
   const width = ref.current?.getBoundingClientRect().width ?? 100;
   return <div ref={ref} {...attributes} className={`${className} ${dx ? 'bp2-swiping' : ''} ${settling ? 'bp2-swipe-settling' : ''}`} data-swipe={target} data-swipe-side={dx >= 0 ? 'right' : 'left'}
     style={{ ...style, '--bp2-swipe-x': `${dx}px`, '--bp2-swipe-icon': `${Math.min(52, Math.max(25, width * .15))}px`, '--bp2-swipe-inset': `${Math.min(23, Math.max(9, width * .075))}px` } as CSSProperties}

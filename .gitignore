@@ -11,3 +11,5 @@ cdk.out/
 *.zip
 playwright-report/
 config.local.json
+
+apps/web/public/config.json

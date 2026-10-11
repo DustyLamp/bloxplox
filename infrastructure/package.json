@@ -1,1 +1,6 @@
-{"name":"@bloxplox/infrastructure","version":"1.0.0","private":true,"type":"module"}
+{
+  "name": "@bloxplox/infrastructure",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module"
+}

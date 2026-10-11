@@ -35,7 +35,7 @@ export const habitSchema = z.object({
   reminder: z.string().regex(/^(\d{2}:\d{2})?$/), categories: z.array(id).max(12),
 }).strict();
 export const ruleSchema = z.object({
-  name, habitId: id.nullable(), categories: z.array(id).max(12), effectiveFrom: dateSchema,
+  name, habitId: id.nullable(), categories: z.array(id).max(12), seriesId: id, effectiveFrom: dateSchema,
   recurrence: recurrenceSchema, start: minute, duration: z.number().int().min(15).max(1440).multipleOf(15),
   conflict: z.enum(['push', 'free']),
 }).strict().refine(r => r.start + r.duration <= 1440, 'A block must end by midnight');
