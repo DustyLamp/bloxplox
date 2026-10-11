@@ -244,6 +244,14 @@ try {
   await expect(pageA.getByRole('button', { name: /Edit QA/ })).toHaveCount(0);
   assert.deepEqual(errors, [], 'Browser runtime errors');
   record('Signing out and switching accounts isolates local data; no browser runtime errors');
+} catch (error) {
+  if (browser) {
+    let index = 0;
+    for (const context of browser.contexts()) for (const page of context.pages()) {
+      await page.screenshot({ path: `test-results/live/failure-${index++}.png`, fullPage: true }).catch(() => {});
+    }
+  }
+  throw error;
 } finally {
   for (const socket of sockets) socket.close();
   await browser?.close();

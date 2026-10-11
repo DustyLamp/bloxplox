@@ -39,7 +39,7 @@ yarn synth
 
 ## Deployment
 
-Destination: **https://bloxplox.com**, account `807550663091`, region `eu-north-1`, local AWS profile `bloxplox`. Public account creation requires email verification.
+Live at **https://bloxplox.com**, account `807550663091`, region `eu-north-1`, local AWS profile `bloxplox`. Public account creation requires email verification.
 
 The `bloxplox-production` CodePipeline watches `main`, tests the application, synthesizes and updates itself, deploys the backend, then publishes a matching build and runtime configuration to Amplify. Merge to `main` to deploy. No manual pipeline approval is required.
 

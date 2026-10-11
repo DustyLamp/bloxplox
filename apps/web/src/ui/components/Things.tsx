@@ -6,6 +6,7 @@ import { blankBlock, useActions } from '../../domain/actions';
 import { useCategoryFill } from './Boards';
 import { CategoryPicker } from './Editors';
 import { newThing } from './ThingPicker';
+import { useLiveDraft } from './useLiveDraft';
 import { Button, Dialog, ErrorText, Field, Select } from './common';
 
 export function Things({ date, editBlock, report }: { date: string; editBlock: (block: Block) => void; report: (message: string) => void }) {
@@ -45,10 +46,11 @@ export function Things({ date, editBlock, report }: { date: string; editBlock: (
 }
 
 function ThingEditor({ thing, onClose, schedule, report }: { thing: Thing; onClose: () => void; schedule: () => void; report: (message: string) => void }) {
-  const { save, docs } = useData(), [draft, setDraft] = useState(thing), [error, setError] = useState(''), [busy, setBusy] = useState(false);
+  const { save, docs } = useData(), [error, setError] = useState(''), [busy, setBusy] = useState(false);
+  const [draft, setDraft, baseline] = useLiveDraft(thing, entities(docs, 'thing').find(t => t.id === thing.id));
   async function submit(after: () => void) {
     setBusy(true); setError('');
-    try { const { id, ...data } = draft; await save(id, 'thing', changedFields(thing, data)); after(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+    try { const { id, ...data } = draft; await save(id, 'thing', changedFields(baseline, data)); after(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
   return <Dialog title="Edit thing" onClose={onClose}><form onSubmit={e => { e.preventDefault(); void submit(onClose); }}>
     <Field label="Name"><input required autoFocus maxLength={120} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}/></Field>

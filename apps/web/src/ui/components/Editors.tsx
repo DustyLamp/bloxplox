@@ -6,6 +6,7 @@ import { useActions } from '../../domain/actions';
 import { Button, Dialog, ErrorText, Field, Select } from './common';
 import { useCategoryFill } from './Boards';
 import { ThingPicker } from './ThingPicker';
+import { useLiveDraft } from './useLiveDraft';
 
 function useSubmit(onClose?: () => void) {
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
@@ -20,15 +21,17 @@ export function CategoryPicker({ selected, onChange }: { selected: string[]; onC
 }
 export function BlockEditor({ block, onClose, schedule, move, removed }: { block: Block; onClose: () => void; schedule: (block: Block) => void; move: (block: Block) => void; removed: (block: Block) => void }) {
   const { docs } = useData(), actions = useActions(), { busy, error, run, setError } = useSubmit(onClose);
-  const [draft, setDraft] = useState(block), [conflict, setConflict] = useState(false), [policy, setPolicy] = useState<'push' | 'free'>('push');
+  const saved = entities(docs, 'block').find(b => b.id === block.id), currentDate = saved ? saved.timing.date : block.timing.date;
+  const current = currentDate ? dayBlocks(docs, currentDate).find(b => b.id === block.id) : saved;
+  const [draft, setDraft, baseline] = useLiveDraft(block, current), [conflict, setConflict] = useState(false), [policy, setPolicy] = useState<'push' | 'free'>('push');
   const existing = docs.some(d => d.id === block.id) || !!block.ruleId;
-  const result = getCompletion(docs, blockResultId(block));
+  const result = getCompletion(docs, blockResultId(baseline));
   const clashes = dayBlocks(docs, draft.timing.date ?? draft.resultDate).filter(b => b.id !== draft.id && b.timing.start < draft.timing.start + draft.timing.duration && b.timing.start + b.timing.duration > draft.timing.start);
   function submit(e: FormEvent) { e.preventDefault(); if (!draft.name.trim()) return setError('Enter a name'); if (clashes.length && !conflict) return setConflict(true); void run(async () => {
-    await actions.place({ ...draft, name: draft.name.trim(), activities: draft.activities.map(a => a.trim()).filter(Boolean) }, policy, block);
-    if (block.habitId !== draft.habitId && result.status !== 'none' && getCompletion(docs, blockResultId(draft)).status === 'none') await actions.complete(draft.habitId ?? draft.id, draft.resultDate, result);
+    await actions.place({ ...draft, name: draft.name.trim(), activities: draft.activities.map(a => a.trim()).filter(Boolean) }, policy, baseline);
+    if (baseline.habitId !== draft.habitId && result.status !== 'none' && getCompletion(docs, blockResultId(draft)).status === 'none') await actions.complete(draft.habitId ?? draft.id, draft.resultDate, result);
   }); }
-  return <Dialog title={existing ? block.name : 'Add a block'} onClose={onClose}><form onSubmit={submit}>
+  return <Dialog title={existing ? baseline.name : 'Add a block'} onClose={onClose}><form onSubmit={submit}>
     <Field label="Name"><input autoFocus required value={draft.name} maxLength={120} onChange={e => setDraft({ ...draft, name: e.target.value })}/></Field>
     <div className="bp2-fields"><Field label="Start time"><input type="time" step="900" required value={formatTime(draft.timing.start)} onChange={e => setDraft({ ...draft, timing: { ...draft.timing, start: parseTime(e.target.value) } })}/></Field><Field label="Duration (minutes)"><input type="number" min="15" max="1440" step="15" required value={draft.timing.duration} onChange={e => setDraft({ ...draft, timing: { ...draft.timing, duration: Number(e.target.value) } })}/></Field></div>
     <CategoryPicker selected={draft.categories} onChange={categories => setDraft({ ...draft, categories })}/>
@@ -44,12 +47,12 @@ export function BlockEditor({ block, onClose, schedule, move, removed }: { block
     </section>}
     <ErrorText message={error}/><Button type="submit" primary className="bp2-full" disabled={busy}>{busy ? 'Saving…' : conflict ? 'Place block' : 'Save'}</Button>
   </form>
-  {existing && <><div className="bp2-actionrow">{(['done', 'missed', 'none'] as const).map((status, i) => <Button key={status} aria-pressed={result.status === status} onClick={() => void run(() => actions.completeBlock(block, status))}>{['Done', 'Not done', 'Clear'][i]}</Button>)}</div>
-    <button type="button" className="bp2-option" onClick={() => move(block)}><ArrowDownUp/>Move within day<ChevronRight className="bp2-chevron"/></button>
-    <button type="button" className="bp2-option" onClick={() => void run(() => actions.place({ ...block, timing: { ...block.timing, date: shiftDate(block.timing.date ?? block.resultDate, 1) } }, 'free'))}><CalendarPlus/>Move to tomorrow<ChevronRight className="bp2-chevron"/></button>
-    <button type="button" className="bp2-option" onClick={() => void run(() => actions.saveBlock({ ...block, timing: { ...block.timing, date: null } }))}>Add to backlog<ChevronRight className="bp2-chevron"/></button>
-    <button type="button" className="bp2-option" onClick={() => schedule(block)}><Repeat/>{block.ruleId ? 'Edit recurrence' : 'Repeat block'}<ChevronRight className="bp2-chevron"/></button>
-    <button type="button" className="bp2-option danger" onClick={() => void run(async () => { await actions.saveBlock(block, true); removed(block); })}><Trash2/>Delete this block</button>
+  {existing && <><div className="bp2-actionrow">{(['done', 'missed', 'none'] as const).map((status, i) => <Button key={status} aria-pressed={result.status === status} onClick={() => void run(() => actions.completeBlock(baseline, status))}>{['Done', 'Not done', 'Clear'][i]}</Button>)}</div>
+    <button type="button" className="bp2-option" onClick={() => move(baseline)}><ArrowDownUp/>Move within day<ChevronRight className="bp2-chevron"/></button>
+    <button type="button" className="bp2-option" onClick={() => void run(() => actions.place({ ...baseline, timing: { ...baseline.timing, date: shiftDate(baseline.timing.date ?? baseline.resultDate, 1) } }, 'free'))}><CalendarPlus/>Move to tomorrow<ChevronRight className="bp2-chevron"/></button>
+    <button type="button" className="bp2-option" onClick={() => void run(() => actions.saveBlock({ ...baseline, timing: { ...baseline.timing, date: null } }))}>Add to backlog<ChevronRight className="bp2-chevron"/></button>
+    <button type="button" className="bp2-option" onClick={() => schedule(baseline)}><Repeat/>{baseline.ruleId ? 'Edit recurrence' : 'Repeat block'}<ChevronRight className="bp2-chevron"/></button>
+    <button type="button" className="bp2-option danger" onClick={() => void run(async () => { await actions.saveBlock(baseline, true); removed(baseline); })}><Trash2/>Delete this block</button>
   </>}
   </Dialog>;
 }
@@ -60,9 +63,9 @@ export function MovePicker({ block, onClose }: { block: Block; onClose: () => vo
   return <Dialog title={`Move ${block.name}`} onClose={onClose}><Field label="Position"><Select value={position} onChange={e => setPosition(e.target.value)}>{others.map(b => <option key={b.id} value={b.id}>Before {b.name} · {formatTime(b.timing.start)}</option>)}<option value="end">After last block</option></Select></Field><ErrorText message={error}/><Button primary className="bp2-full" disabled={busy} onClick={() => void run(() => { const target = others.find(b => b.id === position), last = others.at(-1); return place({ ...block, timing: { ...block.timing, start: target?.timing.start ?? (last ? last.timing.start + last.timing.duration : block.timing.start) } }); })}>Move</Button></Dialog>;
 }
 export function HabitEditor({ habit, date, onClose }: { habit?: Habit; date: string; onClose: () => void }) {
-  const { save } = useData(), { error, busy, run } = useSubmit(onClose);
-  const [draft, setDraft] = useState<Habit>(habit ?? { id: crypto.randomUUID(), name: '', description: '', type: 'binary', target: 1, unit: '', active: true, weekdays: [0, 1, 2, 3, 4, 5, 6], startDate: date, reminder: '', categories: [] });
-  return <Dialog title={habit ? 'Edit habit' : 'Add habit'} onClose={onClose} tracker><form onSubmit={e => { e.preventDefault(); void run(async () => { const { id, ...data } = draft; await save(id, 'habit', habit ? changedFields(habit, data) : data); }); }}>
+  const { save, docs } = useData(), { error, busy, run } = useSubmit(onClose);
+  const [draft, setDraft, baseline] = useLiveDraft<Habit>(habit ?? { id: crypto.randomUUID(), name: '', description: '', type: 'binary', target: 1, unit: '', active: true, weekdays: [0, 1, 2, 3, 4, 5, 6], startDate: date, reminder: '', categories: [] }, entities(docs, 'habit').find(h => h.id === habit?.id));
+  return <Dialog title={habit ? 'Edit habit' : 'Add habit'} onClose={onClose} tracker><form onSubmit={e => { e.preventDefault(); void run(async () => { const { id, ...data } = draft; await save(id, 'habit', habit ? changedFields(baseline, data) : data); }); }}>
     <Field label="Name"><input autoFocus required maxLength={120} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}/></Field>
     <Field label="Description"><input maxLength={500} value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })}/></Field>
     <Field label="Type"><Select value={draft.type} onChange={e => setDraft({ ...draft, type: e.target.value as Habit['type'] })}><option value="binary">Done / not done</option><option value="value">Numeric</option></Select></Field>
