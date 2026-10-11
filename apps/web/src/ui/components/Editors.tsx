@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ChevronRight, Plus, Repeat, Link, Trash2, CalendarPlus, ArrowDownUp } from 'lucide-react';
-import { blockResultId, dayBlocks, entities, formatDate, formatDuration, formatTime, getCompletion, parseTime, resultId, shiftDate, weekdayNames, type Block, type Habit, type Rule, type Completion } from '../../../../../packages/domain/src/index';
+import { blockResultId, changedFields, dayBlocks, entities, formatDate, formatDuration, formatTime, getCompletion, instantiate, matchesRecurrence, parseTime, resultId, shiftDate, weekdayNames, type Block, type Habit, type Rule, type Completion } from '../../../../../packages/domain/src/index';
 import { useData, useSettings } from '../../commons/data';
 import { useActions } from '../../domain/actions';
 import { Button, Dialog, ErrorText, Field, Select } from './common';
@@ -24,7 +24,7 @@ export function BlockEditor({ block, onClose, schedule, move, removed }: { block
   const result = getCompletion(docs, blockResultId(block));
   const clashes = dayBlocks(docs, draft.timing.date ?? draft.resultDate).filter(b => b.id !== draft.id && b.timing.start < draft.timing.start + draft.timing.duration && b.timing.start + b.timing.duration > draft.timing.start);
   function submit(e: FormEvent) { e.preventDefault(); if (!draft.name.trim()) return setError('Enter a name'); if (clashes.length && !conflict) return setConflict(true); void run(async () => {
-    await actions.place({ ...draft, name: draft.name.trim(), activities: draft.activities.map(a => a.trim()).filter(Boolean) }, policy);
+    await actions.place({ ...draft, name: draft.name.trim(), activities: draft.activities.map(a => a.trim()).filter(Boolean) }, policy, block);
     if (block.habitId !== draft.habitId && result.status !== 'none' && getCompletion(docs, blockResultId(draft)).status === 'none') await actions.complete(draft.habitId ?? draft.id, draft.resultDate, result);
   }); }
   return <Dialog title={existing ? block.name : 'Add a block'} onClose={onClose}><form onSubmit={submit}>
@@ -60,7 +60,7 @@ export function MovePicker({ block, onClose }: { block: Block; onClose: () => vo
 export function HabitEditor({ habit, date, onClose }: { habit?: Habit; date: string; onClose: () => void }) {
   const { save } = useData(), { error, busy, run } = useSubmit(onClose);
   const [draft, setDraft] = useState<Habit>(habit ?? { id: crypto.randomUUID(), name: '', description: '', type: 'binary', target: 1, unit: '', active: true, weekdays: [0, 1, 2, 3, 4, 5, 6], startDate: date, reminder: '', categories: [] });
-  return <Dialog title={habit ? 'Edit habit' : 'Add habit'} onClose={onClose} tracker><form onSubmit={e => { e.preventDefault(); void run(async () => { const { id, ...data } = draft; await save(id, 'habit', data); }); }}>
+  return <Dialog title={habit ? 'Edit habit' : 'Add habit'} onClose={onClose} tracker><form onSubmit={e => { e.preventDefault(); void run(async () => { const { id, ...data } = draft; await save(id, 'habit', habit ? changedFields(habit, data) : data); }); }}>
     <Field label="Name"><input autoFocus required maxLength={120} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}/></Field>
     <Field label="Description"><input maxLength={500} value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })}/></Field>
     <Field label="Type"><Select value={draft.type} onChange={e => setDraft({ ...draft, type: e.target.value as Habit['type'] })}><option value="binary">Done / not done</option><option value="value">Numeric</option></Select></Field>
@@ -89,15 +89,23 @@ export function NumericResult({ habit, date, onClose }: { habit: Habit; date: st
 export function RuleEditor({ habit, block, rule, date, onClose }: { habit?: Habit; block?: Block; rule?: Rule; date: string; onClose: () => void }) {
   const { docs, save } = useData(), { settings } = useSettings(), actions = useActions(), { error, busy, run } = useSubmit(onClose);
   const [linkId, setLinkId] = useState('');
-  const [draft, setDraft] = useState<Rule>(rule ?? { id: crypto.randomUUID(), name: habit?.name ?? block?.name ?? '', habitId: habit?.id ?? block?.habitId ?? null, categories: habit?.categories.length ? habit.categories : block?.categories ?? ['category:personal'], start: block?.timing.start ?? parseTime(habit?.reminder || '08:30'), duration: block?.timing.duration ?? 30, conflict: 'push', recurrence: { startDate: date, endDate: null, repeat: 'once', weekdays: [0, 2, 4], interval: 2, monthDay: Number(date.slice(-2)), timezone: settings.timezone } });
+  const [draft, setDraft] = useState<Rule>(rule ?? { id: crypto.randomUUID(), name: habit?.name ?? block?.name ?? '', habitId: habit?.id ?? block?.habitId ?? null, categories: habit?.categories.length ? habit.categories : block?.categories ?? ['category:personal'], effectiveFrom: date, start: block?.timing.start ?? Math.min(1425, Math.round(parseTime(habit?.reminder || '08:30') / 15) * 15), duration: block?.timing.duration ?? 30, conflict: 'push', recurrence: { startDate: date, endDate: null, repeat: 'once', weekdays: [0, 2, 4], interval: 2, monthDay: Number(date.slice(-2)), timezone: settings.timezone } });
   const r = draft.recurrence, patch = (value: Partial<Rule['recurrence']>) => setDraft({ ...draft, recurrence: { ...r, ...value } });
   return <Dialog title={rule ? 'Edit recurrence' : `Schedule ${draft.name}`} onClose={onClose}><form onSubmit={e => { e.preventDefault(); void run(async () => {
     if (linkId) { const b = dayBlocks(docs, date).find(b => b.id === linkId)!; await actions.link(b, habit!.id); return; }
-    const { id, ...data } = draft; await save(id, 'rule', data);
-    if (block && !block.ruleId) { await actions.saveBlock(block, true); }
+    const split = !!rule && rule.recurrence.startDate < date && rule.effectiveFrom < date;
+    const nextRule = { ...draft, id: split ? crypto.randomUUID() : draft.id, effectiveFrom: split ? date : draft.effectiveFrom };
+    const { id, ...data } = nextRule;
+    if (split) await save(rule!.id, 'rule', { recurrence: { ...rule!.recurrence, endDate: shiftDate(date, -1) } });
+    await save(id, 'rule', rule && !split ? changedFields(rule, data) : data);
+    if (block && !block.ruleId && block.timing.date && matchesRecurrence(nextRule.recurrence, block.timing.date)) {
+      const result = getCompletion(docs, blockResultId(block));
+      await actions.saveBlock(block, true);
+      if (result.status !== 'none') { const occurrence = instantiate(nextRule, block.timing.date); await actions.saveBlock(occurrence); await actions.complete(occurrence.habitId ?? occurrence.id, occurrence.resultDate, result); }
+    }
   }); }}>
     {habit && !rule && <Field label="Placement"><Select value={linkId} onChange={e => setLinkId(e.target.value)}><option value="">New block</option>{dayBlocks(docs, date).filter(b => !b.habitId || b.habitId === habit.id).map(b => <option key={b.id} value={b.id}>Link to {b.name} · {formatTime(b.timing.start)}</option>)}</Select></Field>}
-    {!linkId && <><div className="bp2-fields"><Field label="Starts"><input type="date" required value={r.startDate} onChange={e => patch({ startDate: e.target.value })}/></Field><Field label="Repeat"><Select value={r.repeat} onChange={e => patch({ repeat: e.target.value as Rule['recurrence']['repeat'] })}><option value="once">Once</option><option value="daily">Every day</option><option value="weekly">Weekly</option><option value="interval">Every N days</option><option value="monthly">Monthly</option></Select></Field></div>
+    {!linkId && <>{rule && <p className="bp2-muted">Changes apply from {formatDate(date)}. Earlier days stay as scheduled.</p>}<div className="bp2-fields"><Field label="Starts"><input type="date" required value={r.startDate} onChange={e => patch({ startDate: e.target.value })}/></Field><Field label="Repeat"><Select value={r.repeat} onChange={e => patch({ repeat: e.target.value as Rule['recurrence']['repeat'] })}><option value="once">Once</option><option value="daily">Every day</option><option value="weekly">Weekly</option><option value="interval">Every N days</option><option value="monthly">Monthly</option></Select></Field></div>
       <div className="bp2-fields"><Field label="Start time"><input type="time" required step="900" value={formatTime(draft.start)} onChange={e => setDraft({ ...draft, start: parseTime(e.target.value) })}/></Field><Field label="Duration (minutes)"><input type="number" required min="15" max="1440" step="15" value={draft.duration} onChange={e => setDraft({ ...draft, duration: Number(e.target.value) })}/></Field></div>
       {r.repeat === 'weekly' && <><p className="bp2-muted">{r.weekdays.length} times per week</p><Weekdays value={r.weekdays} onChange={weekdays => patch({ weekdays })}/></>}
       {r.repeat === 'interval' && <Field label="Every N days"><input type="number" required min="1" max="365" value={r.interval} onChange={e => patch({ interval: Number(e.target.value) })}/></Field>}
@@ -108,5 +116,5 @@ export function RuleEditor({ habit, block, rule, date, onClose }: { habit?: Habi
       <Field label="Timezone"><Select value={r.timezone} onChange={e => patch({ timezone: e.target.value })}>{[...new Set([r.timezone, ...Intl.supportedValuesOf('timeZone')])].map(tz => <option key={tz}>{tz}</option>)}</Select></Field>
     </>}
     <ErrorText message={error}/><Button type="submit" primary disabled={busy} className="bp2-full">{linkId ? 'Link habit' : 'Save schedule'}</Button>
-  </form>{rule && <Button className="bp2-full danger" onClick={() => void run(() => save(rule.id, 'rule', {}, true))}>Remove recurrence</Button>}</Dialog>;
+  </form>{rule && <Button className="bp2-full danger" onClick={() => void run(() => rule.recurrence.startDate < date ? save(rule.id, 'rule', { recurrence: { ...rule.recurrence, endDate: shiftDate(date, -1) } }) : save(rule.id, 'rule', {}, true))}>Stop recurrence from this day</Button>}</Dialog>;
 }

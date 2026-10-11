@@ -17,6 +17,7 @@ export function App() {
   const page = path.slice(1) || 'blocks', [date, setDate] = useState(() => localDate(settings.timezone));
   const [menu, setMenu] = useState(false), [modal, setModal] = useState<Modal>(null), [notice, setNotice] = useState(''), [undo, setUndo] = useState<Block | null>(null), [statsHabit, setStatsHabit] = useState<Habit>();
   const clock = useRef(localDate(settings.timezone)), backlogBusy = useRef(false), reminded = useRef(new Set<string>());
+  const [rolloverEpoch, setRolloverEpoch] = useState(0);
   const close = useCallback(() => setModal(null), []);
   const report = useCallback((message: string) => { setNotice(message); }, []);
   const go = (to: string) => { setMenu(false); setModal(null); void navigate({ to: `/${to}` }); };
@@ -44,8 +45,8 @@ export function App() {
     backlogBusy.current = true;
     // One at a time; the reactive database supplies the updated schedule before the next.
     const b = due[0];
-    void actions.place({ ...b, timing: { ...b.timing, date: today, start: settings.dayStart }, backlogDate: null }, 'free').catch(e => report((e as Error).message)).finally(() => { backlogBusy.current = false; });
-  }, [docs, settings.autoBacklog, settings.dayStart, settings.timezone]);
+    void actions.place({ ...b, timing: { ...b.timing, date: today, start: settings.dayStart }, backlogDate: null }, 'free').then(() => { backlogBusy.current = false; setRolloverEpoch(n => n + 1); }).catch(e => { backlogBusy.current = false; report((e as Error).message); });
+  }, [docs, settings.autoBacklog, settings.dayStart, settings.timezone, rolloverEpoch]);
   const openRule = (block: Block) => setModal({ type: 'rule', block, rule: entities(docs, 'rule').find(r => r.id === block.ruleId) });
   return <div className="bp2-app"><DebossFilter/><header className="bp2-header">
     <button type="button" className="bp2-brand" aria-label="BloxPlox home" onClick={() => go('blocks')}><Logo/></button>

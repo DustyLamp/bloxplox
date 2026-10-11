@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode, type ButtonHTMLAttributes } from 'react';
+import { cloneElement, isValidElement, useEffect, useId, useRef, type ReactElement, type ReactNode, type ButtonHTMLAttributes } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 
 export function Button({ children, primary, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { primary?: boolean }) {
@@ -7,7 +7,10 @@ export function Button({ children, primary, ...props }: ButtonHTMLAttributes<HTM
 export function IconButton({ label, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
   return <button type="button" {...props} aria-label={label} className={`bp2-iconbutton ${props.className || ''}`}>{children}</button>;
 }
-export function Field({ label, children }: { label: string; children: ReactNode }) { return <label className="bp2-field"><span>{label}</span>{children}</label>; }
+export function Field({ label, children }: { label: string; children: ReactNode }) {
+  const id = useId();
+  return <div className="bp2-field"><label htmlFor={id}>{label}</label>{isValidElement(children) ? cloneElement(children as ReactElement<{ id?: string }>, { id }) : children}</div>;
+}
 export function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return <span className="bp2-selectwrap"><select {...props}>{children}</select><ChevronDown className="bp2-selectcaret" size={16}/></span>;
 }

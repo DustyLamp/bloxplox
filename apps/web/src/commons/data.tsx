@@ -58,6 +58,7 @@ export function useSettings() {
   const { docs, save } = useData();
   const settings = entities(docs, 'settings').find(s => s.id === 'settings') ?? defaultSettings();
   return { settings, saveSettings: (patch: Partial<DataByKind['settings']>) => {
+    if (docs.some(d => d.id === 'settings')) return save('settings', 'settings', patch);
     const { layout, timezone, dayStart, autoBacklog } = settings;
     return save('settings', 'settings', { layout, timezone, dayStart, autoBacklog, ...patch });
   } };

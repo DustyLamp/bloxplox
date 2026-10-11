@@ -6,6 +6,7 @@ export function History({ date, onDate, manage }: { date: string; onDate: (date:
   const { docs } = useData(), nav = useRef<HTMLElement>(null), extending = useRef(false);
   const [range, setRange] = useState({ from: shiftDate(date, -45), count: 91 });
   const pendingShift = useRef(0), selected = completionStats(docs, date);
+  const needsCenter = useRef(true);
   const dragging = useRef<{ x: number; scroll: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
   useLayoutEffect(() => {
@@ -14,10 +15,14 @@ export function History({ date, onDate, manage }: { date: string; onDate: (date:
     extending.current = false;
   }, [range]);
   useLayoutEffect(() => {
+    if (!needsCenter.current) return;
     const el = nav.current!, item = el.querySelector<HTMLElement>(`[data-date="${date}"]`);
     if (!item) { setRange({ from: shiftDate(date, -45), count: 91 }); return; }
     el.scrollLeft = item.offsetLeft - el.offsetLeft - (el.clientWidth - item.clientWidth) / 2;
-  }, [date, range.from === shiftDate(date, -45)]);
+    needsCenter.current = false;
+  }, [date, range]);
+  const priorDate = useRef(date);
+  if (priorDate.current !== date) { priorDate.current = date; needsCenter.current = true; }
   function extend() {
     const el = nav.current;
     if (!el || extending.current || !el.firstElementChild) return;

@@ -1,21 +1,21 @@
 import { useData } from '../commons/data';
-import { blockResultId, canonical, dayBlocks, getCompletion, insertBlock, resultId, type Block, type Completion, type DataByKind } from '../../../../packages/domain/src/index';
+import { blockResultId, canonical, changedFields, dayBlocks, getCompletion, insertBlock, resultId, type Block, type Completion, type DataByKind } from '../../../../packages/domain/src/index';
 
 export function useActions() {
   const { docs, save } = useData();
-  async function saveBlock(block: Block, deleted = false) {
+  async function saveBlock(block: Block, deleted = false, baseline?: Block) {
     const { id, ...data } = block;
     const existing = docs.find(d => d.id === id);
-    const changes = existing ? Object.fromEntries(Object.entries(data).filter(([key, value]) => canonical(value) !== canonical(existing.data[key]))) : data;
+    const changes = existing ? changedFields(baseline ?? existing.data, data) : data;
     await save(id, 'block', changes, deleted);
   }
-  async function place(block: Block, policy: 'push' | 'free' = 'push') {
-    if (!block.timing.date) return saveBlock(block);
+  async function place(block: Block, policy: 'push' | 'free' = 'push', baseline?: Block) {
+    if (!block.timing.date) return saveBlock(block, false, baseline);
     const proposed = insertBlock(dayBlocks(docs, block.timing.date), block, policy);
     if (!proposed) throw new Error('Would extend past midnight. Choose another time or add to backlog.');
     for (const item of proposed) {
       const existing = dayBlocks(docs, block.timing.date).find(b => b.id === item.id);
-      if (item.id === block.id || !existing || canonical(item) !== canonical(existing)) await saveBlock(item);
+      if (item.id === block.id || !existing || canonical(item) !== canonical(existing)) await saveBlock(item, false, item.id === block.id ? baseline : undefined);
     }
   }
   async function complete(subjectId: string, date: string, completion: Completion) {

@@ -6,9 +6,9 @@ export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value =
 }, 'Enter a valid date');
 const id = z.string().min(1).max(180).regex(/^[a-zA-Z0-9:_-]+$/);
 const name = z.string().trim().min(1).max(120);
-const minute = z.number().int().min(0).max(1439);
+const minute = z.number().int().min(0).max(1425).multipleOf(15);
 export const timingSchema = z.object({
-  date: dateSchema.nullable(), start: minute, duration: z.number().int().min(15).max(1440),
+  date: dateSchema.nullable(), start: minute, duration: z.number().int().min(15).max(1440).multipleOf(15),
 }).strict().refine(t => t.start + t.duration <= 1440, 'A block must end by midnight');
 const timezoneSchema = z.string().max(100).refine(tz => { try { new Intl.DateTimeFormat('en', { timeZone: tz }); return true; } catch { return false; } });
 export const recurrenceSchema = z.object({
@@ -35,14 +35,14 @@ export const habitSchema = z.object({
   reminder: z.string().regex(/^(\d{2}:\d{2})?$/), categories: z.array(id).max(12),
 }).strict();
 export const ruleSchema = z.object({
-  name, habitId: id.nullable(), categories: z.array(id).max(12),
-  recurrence: recurrenceSchema, start: minute, duration: z.number().int().min(15).max(1440),
+  name, habitId: id.nullable(), categories: z.array(id).max(12), effectiveFrom: dateSchema,
+  recurrence: recurrenceSchema, start: minute, duration: z.number().int().min(15).max(1440).multipleOf(15),
   conflict: z.enum(['push', 'free']),
 }).strict().refine(r => r.start + r.duration <= 1440, 'A block must end by midnight');
 export const resultSchema = z.object({ subjectId: id, date: dateSchema, completion: completionSchema }).strict();
 export const settingsSchema = z.object({
   layout: z.enum(['grid', 'list']), timezone: timezoneSchema,
-  dayStart: z.number().int().min(0).max(1380), autoBacklog: z.boolean(),
+  dayStart: z.number().int().min(0).max(1380).multipleOf(15), autoBacklog: z.boolean(),
 }).strict();
 
 export type Category = z.infer<typeof categorySchema> & { id: string };

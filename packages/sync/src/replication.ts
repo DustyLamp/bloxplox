@@ -33,7 +33,7 @@ export function startSync(db: Database, config: SyncConfig, onStatus: (status: S
   }
   const replication = replicateRxCollection<Document, Checkpoint>({
     collection: db.records, replicationIdentifier: `bloxplox-v1:${config.apiUrl}:${config.subject}`,
-    live: true, retryTime: 5000, waitForLeadership: true,
+    live: true, retryTime: 5000, waitForLeadership: false,
     pull: { batchSize: 50, stream$: stream, handler: async (checkpoint, limit) => {
       const result = await request<{ documents: Document[]; checkpoint: Checkpoint }>('/sync/pull', { checkpoint, limit });
       return { ...result, documents: result.documents.map(doc => ({ ...doc, _deleted: false })) };

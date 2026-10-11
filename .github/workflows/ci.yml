@@ -19,13 +19,17 @@ jobs:
       - run: yarn typecheck
       - run: yarn test
       - run: yarn build
-      - run: yarn playwright install --with-deps chromium
-      - run: yarn test:e2e
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: dist/
       - run: yarn synth
       - uses: actions/upload-artifact@v4
         with:
           name: deployment-assembly
           path: cdk.out/
+      - run: yarn playwright install --with-deps chromium
+      - run: yarn test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

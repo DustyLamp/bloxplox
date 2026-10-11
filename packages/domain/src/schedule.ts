@@ -21,6 +21,7 @@ export function dayBlocks(docs: Document[], date: string): Block[] {
   const ids = new Set(docs.filter(d => d.kind === 'block').map(d => d.id));
   const habits = entities(docs, 'habit');
   for (const rule of entities(docs, 'rule').sort((a, b) => a.id.localeCompare(b.id))) {
+    if (date < rule.effectiveFrom) continue;
     if (rule.habitId && !habits.some(h => h.id === rule.habitId && h.active)) continue;
     if (matchesRecurrence(rule.recurrence, date) && !ids.has(occurrenceId(rule.id, date))) {
       const generated = instantiate(rule, date);

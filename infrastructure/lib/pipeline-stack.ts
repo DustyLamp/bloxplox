@@ -10,7 +10,7 @@ export class PipelineStack extends Stack {
   constructor(scope: Construct, id: string, props: StackProps) {
     super(scope, id, props);
     const source = CodePipelineSource.gitHub(deployment.repository, deployment.branch, { authentication: SecretValue.secretsManager(deployment.sourceSecretName) });
-    const installCommands = ['n 22', 'npm install -g corepack', 'corepack enable', 'yarn install --immutable'];
+    const installCommands = ['n 22', 'corepack enable', 'yarn install --immutable'];
     const pipeline = new CodePipeline(this, 'Pipeline', {
       pipelineName: 'bloxplox-production', selfMutation: true,
       codeBuildDefaults: { buildEnvironment: { buildImage: LinuxBuildImage.STANDARD_7_0 } },

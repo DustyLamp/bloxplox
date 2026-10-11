@@ -7,6 +7,9 @@ export function canonical(value: unknown): string {
 }
 export const sameContent = (a: Document, b: Document) => a.id === b.id && a.kind === b.kind &&
   a.deleted === b.deleted && canonical(a.data) === canonical(b.data) && canonical(a.clocks) === canonical(b.clocks);
+export function changedFields<T extends object>(before: T, after: T): Partial<T> {
+  return Object.fromEntries(Object.entries(after).filter(([key, value]) => key !== 'id' && canonical(value) !== canonical((before as Record<string, unknown>)[key]))) as Partial<T>;
+}
 const compare = (a: Stamp, b: Stamp) => a.counter - b.counter || a.actor.localeCompare(b.actor, 'en');
 
 /** A field is an atomic value: timing and completion cannot be split by a merge. */

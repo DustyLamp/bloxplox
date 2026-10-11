@@ -30,7 +30,7 @@ describe('calendar recurrence', () => {
   });
 });
 describe('stable occurrences and shared completion', () => {
-  const rule: Rule = { id: 'rule-1', name: 'Read', habitId: 'habit-1', categories: ['reading'], recurrence: { ...recurrence, repeat: 'daily' }, start: 600, duration: 30, conflict: 'push' };
+  const rule: Rule = { id: 'rule-1', name: 'Read', habitId: 'habit-1', categories: ['reading'], effectiveFrom: recurrence.startDate, recurrence: { ...recurrence, repeat: 'daily' }, start: 600, duration: 30, conflict: 'push' };
   const { id: ruleId, ...ruleData } = rule;
   const base = [editDocument(undefined, ruleId, 'rule', ruleData, 'test'), editDocument(undefined, 'habit-1', 'habit', { name: 'Read', description: '', type: 'binary', target: 1, unit: '', active: true, weekdays: [0,1,2,3,4,5,6], startDate: '2026-01-01', reminder: '', categories: ['reading'] }, 'test')];
   it('does not write when projecting and never generates a moved or deleted occurrence twice', () => {
