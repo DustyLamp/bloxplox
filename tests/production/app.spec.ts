@@ -8,6 +8,18 @@ async function addBlock(page: Page, name = 'Read', start = '08:00') {
   await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 async function menu(page: Page, name: string) { await page.getByRole('button', { name: 'Menu', exact: true }).click(); await page.getByRole('navigation', { name: 'Main menu' }).getByRole('button', { name, exact: true }).click(); }
+test('secondary navigation shows one valid page and unknown routes recover to Blocks', async ({ page }) => {
+  await open(page);
+  for (const [name, heading] of [['Calendars', 'Calendars'], ['Manage habits', 'Habits'], ['Categories', 'Categories'], ['History', 'History'], ['Templates', 'Day templates'], ['Settings', 'Settings'], ['Backlog', 'Backlog']]) {
+    await menu(page, name);
+    await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Page not found', exact: true })).toHaveCount(0);
+  }
+  await page.goto('/missing-page');
+  await expect(page.getByRole('heading', { name: 'Page not found', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to Blocks', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Add a block', exact: true })).toBeVisible();
+});
 test('open forms refresh untouched fields, preserve edits and do not resurrect a remotely deleted block', async ({ page, context }) => {
   await open(page); await addBlock(page, 'Shared');
   const other = await context.newPage(); await open(other);
