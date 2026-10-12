@@ -36,5 +36,5 @@ export function Auth({ auth, onSignedIn, initialError = '' }: { auth: AuthServic
       {mode !== 'signin' && <Button onClick={() => { setMode('signin'); setError(''); }}>Back to sign in</Button>}
       {mode === 'verify' && <Button disabled={busy} onClick={async () => { setBusy(true); try { await auth.resend(email); setNotice('A new code has been sent.'); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}>Resend code</Button>}
     </div>
-  </section><nav className="public-links" aria-label="About and privacy"><a href="/about">About BloxPlox</a><a href="/privacy">Privacy</a><a href="mailto:jez@bloxplox.com">Contact</a></nav></main>;
+  </section><nav className="public-links" aria-label="About and privacy"><a href="/about">About BloxPlox</a><a href="/privacy">Privacy</a><a href="mailto:iamjeza@gmail.com">Contact</a></nav></main>;
 }
