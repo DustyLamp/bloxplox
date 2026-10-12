@@ -1,13 +1,12 @@
 name: Build native previews (no deployment)
 on:
   workflow_dispatch:
-  pull_request:
-    types: [opened, ready_for_review]
-    paths:
-      - 'apps/mobile/**'
-      - 'packages/**'
-      - 'yarn.lock'
-      - '.github/workflows/native.yml'
+    inputs:
+      platform:
+        description: Native preview to build
+        type: choice
+        default: both
+        options: [both, android, ios]
 concurrency:
   group: native-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -15,7 +14,7 @@ permissions:
   contents: read
 jobs:
   android:
-    if: github.event.repository.private == false
+    if: github.event.repository.private == false && inputs.platform != 'ios'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -42,7 +41,7 @@ jobs:
           path: apps/mobile/android/app/build/outputs/apk/release/*.apk
           retention-days: 1
   ios:
-    if: github.event.repository.private == false
+    if: github.event.repository.private == false && inputs.platform != 'android'
     runs-on: macos-26
     timeout-minutes: 45
     env:
@@ -59,7 +58,9 @@ jobs:
         working-directory: apps/mobile/ios
         run: pod install
       - name: Build iOS simulator application
-        run: xcodebuild -workspace apps/mobile/ios/BloxPlox.xcworkspace -scheme BloxPlox -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build-ios CODE_SIGNING_ALLOWED=NO -quiet
+        # Xcode's local simulator signature embeds the application identity
+        # required by Keychain. Disabling signing also disables that entitlement.
+        run: xcodebuild -workspace apps/mobile/ios/BloxPlox.xcworkspace -scheme BloxPlox -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build-ios -quiet
       - name: Package simulator application
         run: tar -czf BloxPlox-ios-simulator.tar.gz -C build-ios/Build/Products/Release-iphonesimulator BloxPlox.app
       - uses: actions/upload-artifact@v4

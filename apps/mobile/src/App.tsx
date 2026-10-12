@@ -41,6 +41,7 @@ function Main() {
   const today = useRef(localDate(settings.timezone)), backlogBusy = useRef(false), scroll = useRef<ScrollView>(null), close = () => setDialog(undefined);
   const run = (work: Promise<unknown>) => { void work.catch(error => setError(error.message)); };
   const go = (next: string) => { setPage(next); setMenu(false); close(); scroll.current?.scrollTo({ y: 0, animated: false }); };
+  useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [settings.layout]);
   const graph = (id?: string) => { setGraphFocus(id); go('graph'); };
   const applicableRule = (rules: Rule[]) => rules.filter(r => r.effectiveFrom <= date && (!r.recurrence.endDate || r.recurrence.endDate >= date)).sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0];
   useEffect(() => { const tick = () => { const current = localDate(settings.timezone); if (current !== today.current) { setDate(value => value === today.current ? current : value); today.current = current; setEpoch(n => n + 1); } }; tick(); const timer = setInterval(tick, 15000), active = AppState.addEventListener('change', state => { if (state === 'active') tick(); }); return () => { clearInterval(timer); active.remove(); }; }, [settings.timezone]);

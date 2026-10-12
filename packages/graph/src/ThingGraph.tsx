@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo } from 'react';
+import { memo, useEffect, useMemo, type CSSProperties } from 'react';
 import { Background, Controls, Handle, MarkerType, Position, ReactFlow, ReactFlowProvider, useReactFlow, type Node, type NodeProps } from '@xyflow/react';
 import { graphPositions, prerequisites, type ThingGraph as Graph } from '../../domain/src/index';
 import '@xyflow/react/dist/style.css';
@@ -15,6 +15,7 @@ const Tile = memo(function Tile({ data, selected }: NodeProps<ThingNode>) {
 const nodeTypes = { thing: Tile };
 export interface ThingGraphProps {
   graph: Graph; selected?: string; colors?: Record<string, string>;
+  style?: CSSProperties;
   onSelect: (id: string) => void; onConnect?: (thingId: string, prerequisiteId: string) => void;
 }
 function Canvas({ graph, selected, colors = {}, onSelect, onConnect }: ThingGraphProps) {
@@ -37,5 +38,5 @@ function Canvas({ graph, selected, colors = {}, onSelect, onConnect }: ThingGrap
  * The same canvas can be bundled locally inside a React Native WebView.
  */
 export function ThingGraph(props: ThingGraphProps) {
-  return <div className="thing-graph-canvas"><ReactFlowProvider><Canvas {...props}/></ReactFlowProvider></div>;
+  return <div className="thing-graph-canvas" style={props.style}><ReactFlowProvider><Canvas {...props}/></ReactFlowProvider></div>;
 }
