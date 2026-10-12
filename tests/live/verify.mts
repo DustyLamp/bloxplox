@@ -233,6 +233,40 @@ try {
   await pageA.getByRole('button', { name: 'Blocks', exact: true }).click();
   await pageB.getByRole('button', { name: 'Blocks', exact: true }).click();
 
+  await pageA.getByRole('button', { name: 'Grid', exact: true }).click();
+  const gridSpace = pageA.getByRole('button', { name: 'Available 12:00 4h', exact: true });
+  await gridSpace.scrollIntoViewIfNeeded();
+  const gridBounds = (await gridSpace.boundingBox())!;
+  await gridSpace.click({ position: { x: gridBounds.width / 4, y: gridBounds.height / 2 } });
+  await expect(pageA.getByLabel('Start time', { exact: true })).toHaveValue('13:00');
+  await expect(pageA.getByLabel('Duration (minutes)', { exact: true })).toHaveValue('60');
+  await pageA.getByLabel('Name', { exact: true }).fill('QA hour from grid');
+  await pageA.screenshot({ path: 'test-results/live/available-grid-editor.png', fullPage: true });
+  await pageA.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(pageA.getByRole('dialog')).toHaveCount(0);
+  await expect(pageB.getByRole('button', { name: '13:00 QA hour from grid 1h', exact: true })).toBeVisible({ timeout: 15000 });
+
+  await pageB.getByRole('button', { name: 'List', exact: true }).click();
+  const listSpace = pageB.getByRole('button', { name: 'Available 08:30 4h 30m', exact: true });
+  await listSpace.scrollIntoViewIfNeeded();
+  const listBounds = (await listSpace.boundingBox())!;
+  await listSpace.tap({ position: { x: listBounds.width / 2, y: listBounds.height / 9 } });
+  await expect(pageB.getByLabel('Start time', { exact: true })).toHaveValue('09:00');
+  await expect(pageB.getByLabel('Duration (minutes)', { exact: true })).toHaveValue('60');
+  await pageB.getByLabel('Name', { exact: true }).fill('QA hour from list');
+  await pageB.screenshot({ path: 'test-results/live/available-list-editor.png', fullPage: true });
+  await pageB.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(pageB.getByRole('dialog')).toHaveCount(0);
+  await pageB.reload();
+  await expect(pageB.getByRole('button', { name: '09:00 QA hour from list 1h', exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(pageA.getByRole('button', { name: '09:00 QA hour from list 1h', exact: true })).toBeVisible({ timeout: 15000 });
+  const liveBlocks = [...(await all(a.token)).docs.values()].filter(doc => doc.kind === 'block');
+  for (const name of ['QA hour from grid', 'QA hour from list']) {
+    assert.equal((liveBlocks.find(doc => doc.data.name === name)?.data.timing as { duration: number })?.duration, 60);
+  }
+  await pageA.getByRole('button', { name: 'Grid', exact: true }).click();
+  record('Empty-space desktop Grid clicks and mobile List taps create one-hour blocks, persist through AWS and synchronize across devices');
+
   await pageA.screenshot({ path: 'test-results/live/desktop.png', fullPage: true });
   await pageB.screenshot({ path: 'test-results/live/mobile.png', fullPage: true });
   await menu(pageA, 'Settings');

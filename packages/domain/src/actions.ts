@@ -38,7 +38,7 @@ export function createActions(docs: import('./model').Document[], save: SaveReco
   }
   return { saveBlock, place, complete, completeBlock, link, save };
 }
-export function blankBlock(date: string, start = 480): Block {
-  return { id: crypto.randomUUID(), name: '', timing: { date, start, duration: 30 }, categories: ['category:personal'], activities: [], habitId: null, resultDate: date, ruleId: null, occurrenceDate: null, order: Date.now(), notes: '', backlogDate: null };
+export function blankBlock(date: string, start = 480, duration = 30): Block {
+  return { id: crypto.randomUUID(), name: '', timing: { date, start, duration: Math.min(duration, 1440 - start) }, categories: ['category:personal'], activities: [], habitId: null, resultDate: date, ruleId: null, occurrenceDate: null, order: Date.now(), notes: '', backlogDate: null };
 }
 export const blockData = ({ id: _id, ...data }: Block): DataByKind['block'] => data;

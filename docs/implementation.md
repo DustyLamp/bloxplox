@@ -80,6 +80,10 @@ It writes the check results and desktop/mobile screenshots to ignored `test-resu
 - Mobile gestures have been exercised with Chromium touch input. Physical iOS/Safari testing remains outstanding.
 - Changes and tombstones are retained indefinitely for reliable catch-up. Review DynamoDB growth before adding retention. Monitor the notification dead-letter queue alarm; no external alert destination has been configured.
 
+## Creating blocks from available space
+
+Clicking or tapping Available opens a new block at the selected fifteen-minute position with a one-hour duration. Grid uses the horizontal position and List uses the vertical position. Keyboard activation starts at the beginning of the gap; the duration shortens at midnight. Existing overlap confirmation applies before a new block can move another block. Cancelling writes nothing. Web and React Native share the start-time calculation. Six desktop/mobile browser checks cover both axes, persistence, gap boundaries, overlap cancellation, keyboard activation and midnight; native TypeScript passes, with native coordinate gestures still awaiting runtime verification.
+
 
 ### Habits, prerequisites and native applications — 12 October 2026
 
