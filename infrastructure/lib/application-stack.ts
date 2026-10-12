@@ -15,6 +15,9 @@ import { HttpLambdaIntegration, WebSocketLambdaIntegration } from 'aws-cdk-lib/a
 import { HttpJwtAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 import * as amplify from 'aws-cdk-lib/aws-amplify';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import { resolve } from 'node:path';
 import { deployment } from '../config';
 
@@ -107,7 +110,13 @@ export class ApplicationStack extends Stack {
       filters: [lambda.FilterCriteria.filter({ eventName: ['INSERT'], dynamodb: { Keys: { sk: { S: [{ prefix: 'CHANGE#' }] } } } })],
     }));
     failures.metricApproximateNumberOfMessagesVisible().createAlarm(this, 'NotificationFailureAlarm', { threshold: 1, evaluationPeriods: 1, alarmDescription: 'Inspect notification dead letters. HTTP catch-up remains available.' });
+    const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'Zone', { hostedZoneId: deployment.hostedZoneId, zoneName: deployment.domain });
+    const apiHostname = `api.${deployment.domain}`, publicApiUrl = `https://${apiHostname}`;
+    const certificate = new acm.Certificate(this, 'ApiCertificate', { domainName: apiHostname, validation: acm.CertificateValidation.fromDns(zone) });
+    const apiDomain = new apigw.DomainName(this, 'ApiDomain', { domainName: apiHostname, certificate });
+    new route53.ARecord(this, 'ApiAlias', { zone, recordName: 'api', target: route53.RecordTarget.fromAlias(new route53Targets.ApiGatewayv2DomainProperties(apiDomain.regionalDomainName, apiDomain.regionalHostedZoneId)) });
     const api = new apigw.HttpApi(this, 'HttpApi', {
+      defaultDomainMapping: { domainName: apiDomain },
       apiName: 'bloxplox-production', corsPreflight: { allowOrigins: [`https://${deployment.domain}`, `https://www.${deployment.domain}`, 'http://127.0.0.1:5174'],
         allowHeaders: ['authorization', 'content-type'], allowMethods: [apigw.CorsHttpMethod.POST], maxAge: Duration.hours(1) },
       defaultAuthorizer: new HttpJwtAuthorizer('Cognito', pool.userPoolProviderUrl, { jwtAudience: [client.userPoolClientId] }),
@@ -124,7 +133,7 @@ export class ApplicationStack extends Stack {
     for (const worker of [calendar, calendarWorker]) {
       data.grantReadWriteData(worker); googleSecret.grantRead(worker); calendarQueue.grantSendMessages(worker);
       worker.addEnvironment('GOOGLE_SECRET_NAME', 'bloxplox/google-calendar'); worker.addEnvironment('CALENDAR_QUEUE_URL', calendarQueue.queueUrl);
-      worker.addEnvironment('API_URL', api.apiEndpoint); worker.addEnvironment('PRODUCTION_ORIGIN', `https://${deployment.domain}`);
+      worker.addEnvironment('API_URL', publicApiUrl); worker.addEnvironment('PRODUCTION_ORIGIN', `https://${deployment.domain}`);
     }
     calendarWorker.addEventSource(new SqsEventSource(calendarQueue, { batchSize: 1, maxConcurrency: 2, reportBatchItemFailures: true }));
     new events.Rule(this, 'CalendarDailyCatchup', { schedule: events.Schedule.rate(Duration.days(1)), targets: [new targets.LambdaFunction(calendarWorker, { event: events.RuleTargetInput.fromObject({ daily: true }), retryAttempts: 2 })] });
@@ -136,14 +145,14 @@ export class ApplicationStack extends Stack {
     const app = new amplify.CfnApp(this, 'Hosting', {
       name: 'bloxplox-production', platform: 'WEB',
       customRules: [{ source: '</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webmanifest)$)([^.]+$)/>', target: '/index.html', status: '200' }],
-      customHeaders: `customHeaders:\n  - pattern: '**'\n    headers:\n      - key: X-Content-Type-Options\n        value: nosniff\n      - key: Referrer-Policy\n        value: no-referrer\n      - key: X-Frame-Options\n        value: DENY\n      - key: Permissions-Policy\n        value: camera=(), microphone=(), geolocation=()\n      - key: Content-Security-Policy\n        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cognito-idp.${this.region}.amazonaws.com ${domain.baseUrl()} ${api.apiEndpoint} ${wsStage.url}; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"\n  - pattern: '/config.json'\n    headers:\n      - key: Cache-Control\n        value: no-cache\n  - pattern: '/sw.js'\n    headers:\n      - key: Cache-Control\n        value: no-cache\n`,
+      customHeaders: `customHeaders:\n  - pattern: '**'\n    headers:\n      - key: X-Content-Type-Options\n        value: nosniff\n      - key: Referrer-Policy\n        value: no-referrer\n      - key: X-Frame-Options\n        value: DENY\n      - key: Permissions-Policy\n        value: camera=(), microphone=(), geolocation=()\n      - key: Content-Security-Policy\n        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cognito-idp.${this.region}.amazonaws.com ${domain.baseUrl()} ${publicApiUrl} ${api.apiEndpoint} ${wsStage.url}; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"\n  - pattern: '/config.json'\n    headers:\n      - key: Cache-Control\n        value: no-cache\n  - pattern: '/sw.js'\n    headers:\n      - key: Cache-Control\n        value: no-cache\n`,
     });
     const branch = new amplify.CfnBranch(this, 'MainBranch', { appId: app.attrAppId, branchName: 'main', stage: 'PRODUCTION', enableAutoBuild: false, framework: 'React' });
     const hostingDomain = new amplify.CfnDomain(this, 'ProductionDomain', { appId: app.attrAppId, domainName: deployment.domain, subDomainSettings: [{ branchName: branch.branchName, prefix: '' }, { branchName: branch.branchName, prefix: 'www' }], enableAutoSubDomain: false });
     hostingDomain.addResourceDependency(branch);
     this.authDomain = new CfnOutput(this, 'AuthDomain', { value: domain.baseUrl() });
     this.socialProviders = new CfnOutput(this, 'SocialProviders', { value: JSON.stringify([...(googleProvider ? ['Google'] : []), ...(appleProvider ? ['SignInWithApple'] : [])]) });
-    this.apiUrl = new CfnOutput(this, 'ApiUrl', { value: api.apiEndpoint });
+    this.apiUrl = new CfnOutput(this, 'ApiUrl', { value: publicApiUrl });
     this.socketUrl = new CfnOutput(this, 'WebSocketUrl', { value: wsStage.url });
     this.poolId = new CfnOutput(this, 'UserPoolId', { value: pool.userPoolId });
     this.clientId = new CfnOutput(this, 'UserPoolClientId', { value: client.userPoolClientId });
