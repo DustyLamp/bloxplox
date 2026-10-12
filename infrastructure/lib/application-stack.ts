@@ -1,4 +1,4 @@
-import { CfnOutput, Duration, RemovalPolicy, Stack, Tags, type StackProps } from 'aws-cdk-lib';
+import { CfnOutput, Duration, RemovalPolicy, SecretValue, Stack, Tags, type StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as ddb from 'aws-cdk-lib/aws-dynamodb';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
@@ -59,17 +59,19 @@ export class ApplicationStack extends Stack {
     identityLink.addToRolePolicy(new iam.PolicyStatement({ actions: ['cognito-idp:ListUsers', 'cognito-idp:AdminGetUser', 'cognito-idp:AdminCreateUser', 'cognito-idp:AdminSetUserPassword', 'cognito-idp:AdminLinkProviderForUser'], resources: [`arn:${this.partition}:cognito-idp:${this.region}:${this.account}:userpool/*`], conditions: { StringEquals: { 'aws:ResourceTag/Application': 'BloxPlox', 'aws:ResourceTag/Environment': 'production' } } }));
     pool.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, identityLink);
     const domain = pool.addDomain('SignInDomain', { managedLoginVersion: cognito.ManagedLoginVersion.CLASSIC_HOSTED_UI, cognitoDomain: { domainPrefix: `bloxplox-${this.account}` } });
+    // Resolve provider secrets by name. A partial ARN ending in '-signin' is
+    // ambiguous because Secrets Manager treats six trailing characters as its suffix.
     const googleClientId = deployment.googleSignInClientId as string;
     const googleProvider = googleClientId ? new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleSignIn', {
       userPool: pool, clientId: googleClientId,
-      clientSecretValue: secretsmanager.Secret.fromSecretNameV2(this, 'GoogleSignInSecret', 'bloxplox/google-signin').secretValueFromJson('clientSecret'),
+      clientSecretValue: SecretValue.secretsManager('bloxplox/google-signin', { jsonField: 'clientSecret' }),
       scopes: ['openid', 'email'],
       attributeMapping: { email: cognito.ProviderAttribute.GOOGLE_EMAIL, emailVerified: cognito.ProviderAttribute.other('email_verified') },
     }) : undefined;
     const apple = deployment.appleSignIn as { clientId: string; teamId: string; keyId: string };
     const appleProvider = apple.clientId && apple.teamId && apple.keyId ? new cognito.UserPoolIdentityProviderApple(this, 'AppleSignIn', {
       userPool: pool, ...apple, scopes: ['email'],
-      privateKeyValue: secretsmanager.Secret.fromSecretNameV2(this, 'AppleSignInSecret', 'bloxplox/apple-signin').secretValueFromJson('privateKey'),
+      privateKeyValue: SecretValue.secretsManager('bloxplox/apple-signin', { jsonField: 'privateKey' }),
       attributeMapping: { email: cognito.ProviderAttribute.other('email'), emailVerified: cognito.ProviderAttribute.other('email_verified') },
     }) : undefined;
     const client = pool.addClient('Web', { userPoolClientName: 'bloxplox-web', generateSecret: false,
