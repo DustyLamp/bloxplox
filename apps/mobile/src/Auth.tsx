@@ -10,8 +10,8 @@ export function Auth({ auth, signedIn, initialError = '' }: { auth: AuthService;
     setMessage('');
     if (mode === 'login') {
       try { await auth.signIn(email, password); await signedIn(); }
-      catch (error) { if ((error as { code?: string }).code === 'UserNotConfirmedException') { setMode('confirm'); await auth.resend(email); setMessage('A verification code has been sent.'); } else throw error; }
-    } else if (mode === 'signup') { await auth.signUp(email, password); setMode('confirm'); setMessage('Check your email for a verification code.'); }
+      catch (error) { if (((error as { code?: string }).code ?? (error as Error).name) === 'UserNotConfirmedException') { setMode('confirm'); await auth.resend(email); setMessage('A verification code has been sent.'); } else throw error; }
+    } else if (mode === 'signup') { try { await auth.signUp(email, password); setPassword(''); setMode('confirm'); setMessage('Check your email for a verification code.'); } catch (error) { if (((error as { code?: string }).code ?? (error as Error).name) !== 'UsernameExistsException') throw error; setPassword(''); setMode('login'); setMessage('An account already uses this email. Sign in, or use Forgot password to add an email password to a Google or Apple account.'); } }
     else if (mode === 'confirm') { await auth.confirm(email, code); setMode('login'); setMessage('Email verified. Sign in.'); }
     else if (mode === 'forgot') { await auth.forgot(email); setMode('reset'); setMessage('Check your email for a reset code.'); }
     else { await auth.reset(email, code, password); setMode('login'); setMessage('Password changed. Sign in.'); }

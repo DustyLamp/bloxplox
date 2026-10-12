@@ -17,6 +17,7 @@ export function Auth({ auth, onSignedIn, initialError = '' }: { auth: AuthServic
       if (mode === 'reset') { await auth.reset(email, code, password); setCode(''); setPassword(''); setMode('signin'); setNotice('Password updated.'); }
     } catch (err) {
       if (err instanceof Error && err.name === 'UserNotConfirmedException') { setMode('verify'); setNotice('Enter the code sent to your email.'); }
+      else if (err instanceof Error && err.name === 'UsernameExistsException') { setMode('signin'); setPassword(''); setNotice('An account already uses this email. Sign in, or use Forgot password to add an email password to a Google or Apple account.'); }
       else setError(err instanceof Error ? err.message : 'Could not continue. Try again.');
     } finally { setBusy(false); }
   }

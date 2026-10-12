@@ -63,13 +63,20 @@ export class ApplicationStack extends Stack {
       scopes: ['openid', 'email', 'profile'],
       attributeMapping: { email: cognito.ProviderAttribute.GOOGLE_EMAIL, emailVerified: cognito.ProviderAttribute.other('email_verified') },
     }) : undefined;
+    const apple = deployment.appleSignIn as { clientId: string; teamId: string; keyId: string };
+    const appleProvider = apple.clientId && apple.teamId && apple.keyId ? new cognito.UserPoolIdentityProviderApple(this, 'AppleSignIn', {
+      userPool: pool, ...apple, scopes: ['email'],
+      privateKeyValue: secretsmanager.Secret.fromSecretNameV2(this, 'AppleSignInSecret', 'bloxplox/apple-signin').secretValueFromJson('privateKey'),
+      attributeMapping: { email: cognito.ProviderAttribute.other('email'), emailVerified: cognito.ProviderAttribute.other('email_verified') },
+    }) : undefined;
     const client = pool.addClient('Web', { userPoolClientName: 'bloxplox-web', generateSecret: false,
-      supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO, ...(googleProvider ? [cognito.UserPoolClientIdentityProvider.GOOGLE] : [])],
+      supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO, ...(googleProvider ? [cognito.UserPoolClientIdentityProvider.GOOGLE] : []), ...(appleProvider ? [cognito.UserPoolClientIdentityProvider.APPLE] : [])],
       oAuth: { flows: { authorizationCodeGrant: true }, scopes: [cognito.OAuthScope.OPENID, cognito.OAuthScope.EMAIL, cognito.OAuthScope.PROFILE, cognito.OAuthScope.COGNITO_ADMIN], callbackUrls: [`https://${deployment.domain}/auth/callback`, `https://www.${deployment.domain}/auth/callback`, 'bloxplox://auth'], logoutUrls: [`https://${deployment.domain}/blocks`, 'bloxplox://signed-out'] },
       authFlows: { userSrp: true }, preventUserExistenceErrors: true, enableTokenRevocation: true,
       accessTokenValidity: Duration.minutes(60), idTokenValidity: Duration.minutes(60), refreshTokenValidity: Duration.days(30),
     });
     if (googleProvider) client.node.addDependency(googleProvider);
+    if (appleProvider) client.node.addDependency(appleProvider);
     const fn = (name: string, entry: string) => new NodejsFunction(this, name, {
       entry: resolve(`services/functions/${entry}.ts`), handler: 'handler', runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64, memorySize: 256, timeout: Duration.seconds(29),
@@ -135,7 +142,7 @@ export class ApplicationStack extends Stack {
     const hostingDomain = new amplify.CfnDomain(this, 'ProductionDomain', { appId: app.attrAppId, domainName: deployment.domain, subDomainSettings: [{ branchName: branch.branchName, prefix: '' }, { branchName: branch.branchName, prefix: 'www' }], enableAutoSubDomain: false });
     hostingDomain.addResourceDependency(branch);
     this.authDomain = new CfnOutput(this, 'AuthDomain', { value: domain.baseUrl() });
-    this.socialProviders = new CfnOutput(this, 'SocialProviders', { value: JSON.stringify(googleProvider ? ['Google'] : []) });
+    this.socialProviders = new CfnOutput(this, 'SocialProviders', { value: JSON.stringify([...(googleProvider ? ['Google'] : []), ...(appleProvider ? ['SignInWithApple'] : [])]) });
     this.apiUrl = new CfnOutput(this, 'ApiUrl', { value: api.apiEndpoint });
     this.socketUrl = new CfnOutput(this, 'WebSocketUrl', { value: wsStage.url });
     this.poolId = new CfnOutput(this, 'UserPoolId', { value: pool.userPoolId });
