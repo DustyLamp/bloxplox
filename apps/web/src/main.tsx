@@ -8,6 +8,7 @@ import { Auth } from './ui/Auth';
 import { BillingProvider } from './commons/billing';
 import { PublicPricing } from './ui/components/Pricing';
 import { App } from './ui/App';
+import { PublicPage } from './ui/PublicPages';
 import './styles.css';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string }> {
@@ -29,5 +30,6 @@ function Root() {
   if (!identity && location.pathname === '/pricing') return <PublicPricing/>;
   return <div id="bloxplox-v2">{identity ? <BillingProvider key={identity.subject} auth={auth} subject={identity.subject}><DataProvider key={identity.subject} auth={auth} identity={identity} onSignOut={onSignOut}><RouterProvider router={router}/></DataProvider></BillingProvider> : <Auth auth={auth} initialError={authError} onSignedIn={async () => { if (new URLSearchParams(location.search).get('returnTo') === 'pricing') window.location.assign('/pricing'); else setIdentity(await auth.identity()); }}/>}</div>;
 }
-createRoot(document.getElementById('app')!).render(<ErrorBoundary><Root/></ErrorBoundary>);
+const publicPage = location.pathname === '/privacy' ? 'privacy' : location.pathname === '/about' ? 'about' : undefined;
+createRoot(document.getElementById('app')!).render(<ErrorBoundary>{publicPage ? <PublicPage page={publicPage}/> : <Root/>}</ErrorBoundary>);
 if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load', () => { void navigator.serviceWorker.register('/sw.js').catch(() => {}); });

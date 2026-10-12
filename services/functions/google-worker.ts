@@ -32,7 +32,7 @@ async function synchronize(owner: string, sourceId: string, config: GoogleConfig
     // Complete bounded snapshots expand recurring exceptions correctly. The date
     // window follows the viewed schedule; earlier imported history is retained.
     do {
-      const parameters = new URLSearchParams({ singleEvents: 'true', showDeleted: 'false', maxResults: '2500', timeMin: `${from}T00:00:00Z`, timeMax: `${to}T23:59:59Z` }); if (pageToken) parameters.set('pageToken', pageToken);
+      const parameters = new URLSearchParams({ singleEvents: 'true', showDeleted: 'false', maxResults: '2500', fields: 'nextPageToken,items(id,status,summary,description,location,start,end,recurringEventId,transparency,htmlLink)', timeMin: `${from}T00:00:00Z`, timeMax: `${to}T23:59:59Z` }); if (pageToken) parameters.set('pageToken', pageToken);
       const page: { items?: RemoteEvent[]; nextPageToken?: string } = await googleFetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(source.calendarId)}/events?${parameters}`, token);
       entries.push(...page.items ?? []); pageToken = page.nextPageToken;
       if (entries.length > 15000) throw new Error('Calendar window contains too many events');

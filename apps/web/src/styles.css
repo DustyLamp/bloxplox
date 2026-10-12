@@ -76,3 +76,12 @@ body{min-width:320px;padding:12px}button,input,select,textarea{font:inherit}butt
 #bloxplox-v2 .calendar-account{border-top:1px solid var(--b-line);padding:20px 0}
 #bloxplox-v2 .calendar-account h2{font-size:15px;overflow-wrap:anywhere}
 #bloxplox-v2 .calendar-notes{white-space:pre-wrap;font-size:12px;margin-bottom:20px}
+
+#bloxplox-v2 .auth-intro{font-size:12px;color:var(--b-muted);margin:0 20px 22px;line-height:1.7}
+#bloxplox-v2 .public-links,#bloxplox-v2 .public-page footer{display:flex;flex-wrap:wrap;gap:20px;font-size:12px;margin:24px 0}
+#bloxplox-v2 .public-links{justify-content:center}#bloxplox-v2 .public-links a,#bloxplox-v2 .public-page a:not(.bp2-button){text-decoration:underline;text-underline-offset:3px}
+#bloxplox-v2 .public-page{max-width:820px;margin:24px auto;padding:24px;line-height:1.8}#bloxplox-v2 .public-page header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:48px}#bloxplox-v2 .public-page header .brand-lockup{font-size:23px}
+#bloxplox-v2 .public-page h1{font-size:36px;font-weight:700;letter-spacing:-1px;line-height:1.2;margin-bottom:20px}#bloxplox-v2 .public-page h2{font-size:19px;font-weight:600;line-height:1.5;margin:30px 0 10px}#bloxplox-v2 .public-page p{font-size:13px;margin:12px 0}#bloxplox-v2 .public-page .public-lead{font-size:18px;color:var(--b-muted)}
+#bloxplox-v2 .public-features{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:30px 0}#bloxplox-v2 .public-features section{padding:20px;border-radius:20px;color:#282331;background:#c4b0f2}#bloxplox-v2 .public-features section:nth-child(2){background:#ccec75}#bloxplox-v2 .public-features section:nth-child(3){background:#89baff}#bloxplox-v2 .public-features h2{margin-top:0}
+#bloxplox-v2 .public-page footer{border-top:1px solid var(--b-line);padding-top:20px;margin-top:40px}
+@media(max-width:600px){#bloxplox-v2 .public-page{padding:16px 8px;margin:8px auto}#bloxplox-v2 .public-page h1{font-size:29px}#bloxplox-v2 .public-features{grid-template-columns:1fr}#bloxplox-v2 .public-page header{margin-bottom:30px}}

@@ -63,7 +63,7 @@ export class ApplicationStack extends Stack {
     const googleProvider = googleClientId ? new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleSignIn', {
       userPool: pool, clientId: googleClientId,
       clientSecretValue: secretsmanager.Secret.fromSecretNameV2(this, 'GoogleSignInSecret', 'bloxplox/google-signin').secretValueFromJson('clientSecret'),
-      scopes: ['openid', 'email', 'profile'],
+      scopes: ['openid', 'email'],
       attributeMapping: { email: cognito.ProviderAttribute.GOOGLE_EMAIL, emailVerified: cognito.ProviderAttribute.other('email_verified') },
     }) : undefined;
     const apple = deployment.appleSignIn as { clientId: string; teamId: string; keyId: string };
@@ -132,7 +132,7 @@ export class ApplicationStack extends Stack {
     const googleSecret = secretsmanager.Secret.fromSecretNameV2(this, 'GoogleCalendarConfiguration', 'bloxplox/google-calendar');
     for (const worker of [calendar, calendarWorker]) {
       data.grantReadWriteData(worker); googleSecret.grantRead(worker); calendarQueue.grantSendMessages(worker);
-      worker.addEnvironment('GOOGLE_SECRET_NAME', 'bloxplox/google-calendar'); worker.addEnvironment('CALENDAR_QUEUE_URL', calendarQueue.queueUrl);
+      worker.addEnvironment('GOOGLE_SECRET_NAME', deployment.googleCalendarEnabled ? 'bloxplox/google-calendar' : ''); worker.addEnvironment('CALENDAR_QUEUE_URL', calendarQueue.queueUrl);
       worker.addEnvironment('API_URL', publicApiUrl); worker.addEnvironment('PRODUCTION_ORIGIN', `https://${deployment.domain}`);
     }
     calendarWorker.addEventSource(new SqsEventSource(calendarQueue, { batchSize: 1, maxConcurrency: 2, reportBatchItemFailures: true }));

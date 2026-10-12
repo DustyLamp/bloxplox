@@ -21,7 +21,7 @@ export function Auth({ auth, onSignedIn, initialError = '' }: { auth: AuthServic
       else setError(err instanceof Error ? err.message : 'Could not continue. Try again.');
     } finally { setBusy(false); }
   }
-  return <main className="auth-shell"><Logo/><section className="auth-card"><h1>{title}</h1>
+  return <main className="auth-shell"><Logo/><p className="auth-intro">Blocks for your day, Habits for routines, and Things for one-off tasks.</p><section className="auth-card"><h1>{title}</h1>
     {['signin', 'signup'].includes(mode) && auth.config.socialProviders?.map(provider => <Button key={provider} className="bp2-full auth-social" disabled={busy} onClick={async () => { setBusy(true); setError(''); try { window.location.assign(await auth.socialSignIn(provider, `${location.origin}/auth/callback`)); } catch (e) { setError((e as Error).message); setBusy(false); } }}>Continue with {provider === 'Google' ? 'Google' : 'Apple'}</Button>)}
     <form onSubmit={submit}>
       <Field label="Email"><input type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)}/></Field>
@@ -36,5 +36,5 @@ export function Auth({ auth, onSignedIn, initialError = '' }: { auth: AuthServic
       {mode !== 'signin' && <Button onClick={() => { setMode('signin'); setError(''); }}>Back to sign in</Button>}
       {mode === 'verify' && <Button disabled={busy} onClick={async () => { setBusy(true); try { await auth.resend(email); setNotice('A new code has been sent.'); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}>Resend code</Button>}
     </div>
-  </section></main>;
+  </section><nav className="public-links" aria-label="About and privacy"><a href="/about">About BloxPlox</a><a href="/privacy">Privacy</a><a href="mailto:hello@bloxplox.com">Contact</a></nav></main>;
 }
