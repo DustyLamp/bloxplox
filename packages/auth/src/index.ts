@@ -20,6 +20,16 @@ export class AuthService {
   }
   async identity(): Promise<{ subject: string; email: string } | null> {
     if (this.config.region === 'local') return { subject: this.runtime.localSubject || 'local-user', email: 'local@example.test' };
+    const offlineIdentity = () => {
+      if (!this.runtime.isOnline() && this.pool?.getCurrentUser()) {
+        const cached = this.runtime.storage.getItem(`bloxplox-session:${this.config.userPoolId}`);
+        if (cached) return JSON.parse(cached) as { subject: string; email: string };
+      }
+      return null;
+    };
+    // Open the existing local account immediately without waiting for an
+    // expired token's network refresh while the device is known to be offline.
+    const cached = offlineIdentity(); if (cached) return cached;
     try {
       const session = await this.session(), claims = session.getIdToken().decodePayload();
       const identity = { subject: claims.sub, email: claims.email };
@@ -27,11 +37,7 @@ export class AuthService {
       return identity;
     } catch {
       // Only an already signed-in user can open their cached data while offline.
-      if (!this.runtime.isOnline() && this.pool?.getCurrentUser()) {
-        const cached = this.runtime.storage.getItem(`bloxplox-session:${this.config.userPoolId}`);
-        if (cached) return JSON.parse(cached);
-      }
-      return null;
+      return offlineIdentity();
     }
   }
   async token(force = false): Promise<string> {

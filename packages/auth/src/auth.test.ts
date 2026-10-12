@@ -27,3 +27,11 @@ it('rejects cross-origin callbacks, unsolicited callbacks, expiry, cancellation 
   flow = await start(); await expect(auth.finishSocialSignIn(`https://bloxplox.com/auth/callback?code=x&state=${flow.state}`)).rejects.toThrow('Invalid sign-in');
   expect(auth.pool?.getCurrentUser()).toBeNull();
 });
+it('opens only the current cached account offline without waiting on token refresh', async () => {
+  const flow = await start(); vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => tokens(flow.pending.nonce) })));
+  await auth.finishSocialSignIn(`https://bloxplox.com/auth/callback?code=x&state=${flow.state}`);
+  await auth.identity(); auth.runtime.isOnline = () => false;
+  const session = vi.spyOn(auth, 'session').mockRejectedValue(new Error('Network unavailable'));
+  expect(await auth.identity()).toEqual({subject:'stable-sub',email:'demo@example.com'}); expect(session).not.toHaveBeenCalled();
+  auth.signOut(); expect(await auth.identity()).toBeNull();
+});
