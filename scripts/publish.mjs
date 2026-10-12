@@ -1,5 +1,5 @@
-import { readFile, writeFile, readdir, rm } from 'node:fs/promises';
-import { execFileSync } from 'node:child_process';
+import { readFile, writeFile, readdir } from 'node:fs/promises';
+import { createWebArchive } from './web-archive.mjs';
 import { createHash } from 'node:crypto';
 import { AmplifyClient, CreateDeploymentCommand, StartDeploymentCommand, GetJobCommand } from '@aws-sdk/client-amplify';
 import { CloudFormationClient, DescribeStacksCommand } from '@aws-sdk/client-cloudformation';
@@ -29,11 +29,10 @@ self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=
 self.addEventListener('fetch',event=>{const url=new URL(event.request.url);if(event.request.method!=='GET'||url.origin!==self.location.origin)return;if(event.request.mode==='navigate'){event.respondWith(fetch(event.request).catch(()=>caches.match('/index.html')));return;}if(url.pathname==='/config.json'){event.respondWith(fetch(event.request).catch(()=>caches.match('/config.json')));return;}if(FILES.includes(url.pathname))event.respondWith(caches.match(event.request).then(hit=>hit||fetch(event.request)));});
 `);
 const appId = process.env.BLOXPLOX_AMPLIFY_APP_ID || values.AmplifyAppId;
-await rm('bloxplox-web.zip', { force: true });
-execFileSync('zip', ['-qr', '../bloxplox-web.zip', '.'], { cwd: 'dist' });
+const archive = await createWebArchive();
 const amplify = new AmplifyClient({ region, credentials });
 const deployment = await amplify.send(new CreateDeploymentCommand({ appId, branchName: 'main' }));
-const uploaded = await fetch(deployment.zipUploadUrl, { method: 'PUT', body: await readFile('bloxplox-web.zip'), headers: { 'content-type': 'application/zip' } });
+const uploaded = await fetch(deployment.zipUploadUrl, { method: 'PUT', body: await readFile(archive), headers: { 'content-type': 'application/zip' } });
 if (!uploaded.ok) throw new Error(`Upload failed: ${uploaded.status}`);
 await amplify.send(new StartDeploymentCommand({ appId, branchName: 'main', jobId: deployment.jobId }));
 for (let attempt = 0; attempt < 90; attempt++) {
