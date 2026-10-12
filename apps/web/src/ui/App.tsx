@@ -84,7 +84,7 @@ export function App() {
     {page === 'templates' && <Templates date={date} report={report}/>}
     {page === 'pricing' && <Pricing/>}
     {page === 'settings' && <Settings report={report}/>}
-    {!['blocks', 'habits', 'things', 'backlog', 'categories', 'habits', 'history', 'templates', 'pricing', 'settings'].includes(page) && <section className="bp2-content"><h1>Page not found</h1><Button onClick={() => go('blocks')}>Back to Blocks</Button></section>}
+    {!['blocks', 'habits', 'things', 'calendars', 'backlog', 'categories', 'manage-habits', 'history', 'templates', 'pricing', 'settings'].includes(page) && <section className="bp2-content"><h1>Page not found</h1><Button onClick={() => go('blocks')}>Back to Blocks</Button></section>}
   </main>
   {modal?.type === 'calendar' && <Dialog title="Date" onClose={close}><Field label="Choose date"><input type="date" value={date} onChange={e => { if (e.target.value) setDate(e.target.value); }}/></Field><div className="bp2-actionrow"><Button onClick={() => { setDate(localDate(settings.timezone)); close(); }}>Today</Button><Button primary onClick={close}>Done</Button></div></Dialog>}
   {modal?.type === 'calendar-event' && <CalendarEventEditor slot={modal.slot} date={date} onClose={close}/>}
