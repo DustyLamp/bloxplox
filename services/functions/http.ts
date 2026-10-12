@@ -32,6 +32,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
       if (new Set(changes.map(r => r.newDocumentState.id)).size !== changes.length) return response(400, { error: 'Duplicate document' });
       const conflicts = [];
       for (const row of changes) {
+        if (['calendarSource', 'calendarEvent'].includes(row.newDocumentState.kind)) return response(403, { error: 'Imported calendar records are read-only.' });
         if (JSON.stringify(row.newDocumentState).length > 32_000) return response(400, { error: 'Record too large' });
         if (row.assumedMasterState && row.assumedMasterState.id !== row.newDocumentState.id) return response(400, { error: 'Mismatched record' });
         const conflict = await pushDocument(user.subject, row);

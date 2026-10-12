@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "BloxPlox",
+    "slug": "bloxplox",
+    "version": "0.1.0",
+    "scheme": "bloxplox",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.bloxplox.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.bloxplox.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#fafaf8"
+      }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-sqlite",
+      "expo-font",
+      "expo-notifications",
+      "expo-web-browser"
+    ],
+    "web": {
+      "bundler": "metro"
+    },
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "icon": "./assets/icon.png"
+  }
+}

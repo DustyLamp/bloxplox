@@ -2,7 +2,10 @@ name: Check application
 on:
   pull_request:
   push:
-    branches: [main, production]
+    branches: [main]
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -17,17 +20,21 @@ jobs:
       - run: corepack enable
       - run: yarn install --immutable
       - run: yarn typecheck
+      - run: yarn typecheck:mobile
+      - run: yarn workspace @bloxplox/mobile export --max-workers 2
       - run: yarn test
       - run: yarn build
       - uses: actions/upload-artifact@v4
         with:
           name: web-build
           path: dist/
+          retention-days: 3
       - run: yarn synth
       - uses: actions/upload-artifact@v4
         with:
           name: deployment-assembly
           path: cdk.out/
+          retention-days: 3
       - run: yarn playwright install --with-deps chromium
       - run: yarn test:e2e
       - uses: actions/upload-artifact@v4
@@ -35,3 +42,4 @@ jobs:
         with:
           name: browser-test-results
           path: test-results/
+          retention-days: 7

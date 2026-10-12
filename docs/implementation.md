@@ -79,3 +79,14 @@ It writes the check results and desktop/mobile screenshots to ignored `test-resu
 - Habit records retain completed history; unrecorded past dates follow current weekday settings. Things retain a single completion date, cleared when reopened.
 - Mobile gestures have been exercised with Chromium touch input. Physical iOS/Safari testing remains outstanding.
 - Changes and tombstones are retained indefinitely for reliable catch-up. Review DynamoDB growth before adding retention. Monitor the notification dead-letter queue alarm; no external alert destination has been configured.
+
+
+### Expansion in progress — 12 October 2026
+
+The public domain is still on commit `b44e587a4257b333eb249e5ea82c070743e6a2f5`, whose AWS CodePipeline deployment succeeded. It has no payment gate or active-habit limit. The next release also explicitly disables all paywalls for every account; no special email allowlist is needed for demos.
+
+Created Google Cloud project **BloxPlox**, ID `bloxplox-production`, number `574465139761`, under the user-confirmed `iamjeza@gmail.com` account. No billing account was linked. OAuth branding is prepared; accepting Google's User Data Policy is awaiting the user's action-time approval. OAuth clients have not yet been created, so Google login/calendar connections are not live.
+
+Implemented shared prerequisites, templates, native screens/storage/authentication, calendar import services and overlap layouts, split-Thing sessions, Habits naming, and verified-email account linking. Current checks: 63 unit/backend/storage tests pass; web and native TypeScript checks pass; the full browser suite has 39 passing checks and one intentional mobile keyboard-test skip. CDK initially revealed a Cognito trigger dependency cycle; the tagged-pool IAM policy resolves it and synth passes with template validation enabled. Native iOS/Android bundle exports succeed after gesture and OAuth changes. The Cognito native RNG now uses Expo secure randomness in development and release builds.
+
+A disposable native QA account successfully signed in and synchronized in the iOS simulator before the latest changes. It still needs cleanup after native verification. Native gesture/offline verification, OAuth activation, deployment and live cross-device checks remain outstanding. Stripe onboarding and Apple Developer membership are also pending; no live payments or app-store distribution are claimed.

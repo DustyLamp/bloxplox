@@ -19,7 +19,7 @@ export function CategoryPicker({ selected, onChange }: { selected: string[]; onC
   return <><div className="bp2-chiprow" aria-label="Categories">{entities(docs, 'category').map(c => <button type="button" key={c.id} className="bp2-chip" style={{ background: c.color }} aria-pressed={selected.includes(c.id)} onClick={() => onChange(selected.includes(c.id) ? selected.filter(id => id !== c.id) : [...selected, c.id])}>{c.name}</button>)}<button type="button" className="bp2-chip bp2-chipnew" onClick={() => setAdding(!adding)}><Plus/>Category</button></div>
     {adding && <div className="inline-category"><Field label="Category name"><input value={name} onChange={e => setName(e.target.value)} maxLength={120}/></Field><Field label="Colour"><input type="color" value={color} onChange={e => setColor(e.target.value)}/></Field><Button onClick={() => { if (!name.trim()) return; void run(async () => { const id = crypto.randomUUID(); await save(id, 'category', { name: name.trim(), color }); onChange([...selected, id]); setName(''); setAdding(false); }); }}>Add</Button></div>}<ErrorText message={error}/></>;
 }
-export function BlockEditor({ block, onClose, schedule, move, removed }: { block: Block; onClose: () => void; schedule: (block: Block) => void; move: (block: Block) => void; removed: (block: Block) => void }) {
+export function BlockEditor({ block, onClose, schedule, move, removed, split }: { block: Block; onClose: () => void; schedule: (block: Block) => void; move: (block: Block) => void; removed: (block: Block) => void; split: (block: Block) => void }) {
   const { docs } = useData(), actions = useActions(), { busy, error, run, setError } = useSubmit(onClose);
   const saved = entities(docs, 'block').find(b => b.id === block.id), currentDate = saved ? saved.timing.date : block.timing.date;
   const current = currentDate ? dayBlocks(docs, currentDate).find(b => b.id === block.id) : saved;
@@ -52,6 +52,8 @@ export function BlockEditor({ block, onClose, schedule, move, removed }: { block
     <button type="button" className="bp2-option" onClick={() => void run(() => actions.place({ ...baseline, timing: { ...baseline.timing, date: shiftDate(baseline.timing.date ?? baseline.resultDate, 1) } }, 'free'))}><CalendarPlus/>Move to tomorrow<ChevronRight className="bp2-chevron"/></button>
     <button type="button" className="bp2-option" onClick={() => void run(() => actions.saveBlock({ ...baseline, timing: { ...baseline.timing, date: null } }))}>Add to backlog<ChevronRight className="bp2-chevron"/></button>
     <button type="button" className="bp2-option" onClick={() => schedule(baseline)}><Repeat/>{baseline.ruleId ? 'Edit recurrence' : 'Repeat block'}<ChevronRight className="bp2-chevron"/></button>
+    {!!baseline.thingIds?.length && <button type="button" className="bp2-option" onClick={() => split(baseline)}>Schedule things separately<ChevronRight className="bp2-chevron"/></button>}
+    {!!baseline.calendarEventIds?.length && <button type="button" className="bp2-option" onClick={() => void run(() => actions.saveBlock({ ...baseline, calendarEventIds: [] }))}>Show merged calendar events separately<ChevronRight className="bp2-chevron"/></button>}
     <button type="button" className="bp2-option danger" onClick={() => void run(async () => { await actions.saveBlock(baseline, true); removed(baseline); })}><Trash2/>Delete this block</button>
   </>}
   </Dialog>;

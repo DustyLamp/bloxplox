@@ -36,3 +36,43 @@ body{min-width:320px;padding:12px}button,input,select,textarea{font:inherit}butt
 @media(max-width:560px){#bloxplox-v2 .bp2-header{display:grid;grid-template-columns:minmax(0,1fr) auto;row-gap:7px}#bloxplox-v2 .bp2-header>.bp2-switch{grid-column:1;grid-row:1;justify-self:start}#bloxplox-v2 .bp2-header>.bp2-switch button{padding:8px 10px}#bloxplox-v2 .bp2-menutoggle{grid-column:2;grid-row:1;justify-self:end}#bloxplox-v2 .bp2-datebar{grid-column:1;grid-row:2;margin:0;justify-content:flex-start;min-width:0}#bloxplox-v2 .bp2-datebutton{min-width:130px;padding:8px 4px}#bloxplox-v2 .bp2-layoutswitch{grid-column:2;grid-row:2;justify-self:end}#bloxplox-v2 .things-surface{padding:14px 4px 40px}#bloxplox-v2 .things-grid{grid-template-columns:1fr}#bloxplox-v2 .things-heading .bp2-button{font-size:11px}#bloxplox-v2 .bp2-small .block-things{display:none}}
 @media(max-width:380px){#bloxplox-v2 .bp2-layoutswitch button{font-size:0;gap:0;padding:8px}#bloxplox-v2 .bp2-layoutswitch svg{width:16px;height:16px}}
 @media(pointer:coarse){#bloxplox-v2 .thing-complete{width:44px;height:44px}#bloxplox-v2 .thing-card{align-items:center}}
+
+#bloxplox-v2 .things-heading-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+#bloxplox-v2 .graph-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px}#bloxplox-v2 .graph-toolbar .bp2-field{flex:1;margin:0;min-width:0}
+#bloxplox-v2 .graph-columns{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+#bloxplox-v2 .graph-detail{padding:18px;background:var(--b-panel);border:1px solid var(--b-line);border-radius:18px;min-width:0}
+#bloxplox-v2 .graph-detail h2{font-size:18px;font-weight:600;overflow-wrap:anywhere}#bloxplox-v2 .graph-detail h3{font-size:12px;font-weight:600;margin:20px 0 8px}#bloxplox-v2 .graph-detail h3 span{color:var(--b-muted);margin-left:6px}
+#bloxplox-v2 .graph-list{list-style:none;padding:0;margin:0 0 14px}#bloxplox-v2 .graph-list li{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--b-line)}
+#bloxplox-v2 .graph-check{width:44px;height:44px;border:1px solid var(--b-line);border-radius:10px;flex:none;display:grid;place-items:center}#bloxplox-v2 .graph-check svg{visibility:hidden}#bloxplox-v2 .graph-check.is-done{background:#ccebdc;color:#276349}#bloxplox-v2 .graph-check.is-done svg{visibility:visible}
+#bloxplox-v2 .graph-list-name{flex:1;text-align:left;font-size:12px;min-width:0;overflow-wrap:anywhere}#bloxplox-v2 .graph-list-name small{display:block;color:var(--b-muted);font-size:10px;margin-top:2px}
+#bloxplox-v2 .graph-list .bp2-iconbutton{width:44px;height:44px;flex:none}#bloxplox-v2 .graph-create{border-top:1px solid var(--b-line);margin-top:18px;padding-top:18px}
+#bloxplox-v2 .graph-conflict{padding:12px;border:1px solid #ff9b57;border-radius:10px;margin-top:16px;font-size:12px}
+@media(max-width:850px){#bloxplox-v2 .graph-columns{grid-template-columns:1fr}#bloxplox-v2 .graph-toolbar{align-items:flex-end}#bloxplox-v2 .graph-toolbar .bp2-button{font-size:11px}#bloxplox-v2 .things-heading-actions{max-width:220px}}
+
+#bloxplox-v2 .pricing-page{max-width:900px;margin:auto;padding:24px 12px 50px}#bloxplox-v2 .pricing-heading{margin:30px 0}#bloxplox-v2 .pricing-heading h1{font-size:30px;letter-spacing:-1px;font-weight:700}#bloxplox-v2 .pricing-heading p{font-size:13px;color:var(--b-muted);margin-top:6px}
+#bloxplox-v2 .pricing-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}#bloxplox-v2 .pricing-card{padding:24px;border-radius:20px;border:1px solid var(--b-line);background:var(--b-panel)}#bloxplox-v2 .pricing-plus{background:#c4b0f2;color:#282331;border-color:#ad91e3}#bloxplox-v2 .pricing-card h2{font-size:18px;font-weight:600;margin-bottom:18px}
+#bloxplox-v2 .pricing-amount{font-size:40px;font-weight:700;letter-spacing:-1.5px;margin:20px 0}#bloxplox-v2 .pricing-amount small{display:block;font-size:11px;font-weight:400;letter-spacing:0}#bloxplox-v2 .pricing-card ul{list-style:none;padding:0;margin:20px 0}#bloxplox-v2 .pricing-card li{display:flex;align-items:center;gap:8px;font-size:12px;margin:12px 0}#bloxplox-v2 .pricing-card .bp2-muted{font-size:10px;line-height:1.6;margin-top:14px;color:inherit;opacity:.75}
+#bloxplox-v2 .pricing-footnote,#bloxplox-v2 .pricing-notice{font-size:12px;margin:20px 0;color:var(--b-muted)}#bloxplox-v2 .pricing-signin{display:block;margin:20px 0;text-decoration:underline;font-size:13px}
+@media(max-width:600px){#bloxplox-v2 .pricing-grid{grid-template-columns:1fr}#bloxplox-v2 .pricing-page{padding:16px 4px}#bloxplox-v2 .pricing-heading h1{font-size:25px}}
+
+#bloxplox-v2 .template-create{margin:24px 0;padding:20px;border:1px solid var(--b-line);border-radius:16px}#bloxplox-v2 .template-row{padding:18px 0;border-bottom:1px solid var(--b-line)}#bloxplox-v2 .template-row h2{font-size:16px;font-weight:600}#bloxplox-v2 .template-row p,#bloxplox-v2 .template-row small{font-size:11px;color:var(--b-muted)}#bloxplox-v2 .template-row .bp2-actionrow{margin-top:12px}
+
+#bloxplox-v2 .auth-social{margin-bottom:14px}
+#bloxplox-v2 .bp2-grid .calendar-band{display:flex;height:auto;min-height:180px;gap:4px;align-items:stretch}
+#bloxplox-v2 .calendar-window{display:flex;min-width:0;gap:4px;align-items:stretch}
+#bloxplox-v2 .bp2-grid .calendar-window{flex-direction:column}
+#bloxplox-v2 .calendar-window>.bp2-block{flex:1;min-width:0;height:auto;min-height:80px}
+#bloxplox-v2 .bp2-grid .calendar-window>.bp2-block{min-height:100px}
+#bloxplox-v2 .bp2-list .calendar-window{flex-direction:row}
+#bloxplox-v2 .bp2-list .calendar-window>.bp2-block{height:auto!important}
+#bloxplox-v2 .bp2-list .calendar-window .bp2-face{flex-direction:column;align-items:flex-start;justify-content:space-between;gap:5px;padding:12px}
+#bloxplox-v2 .bp2-list .calendar-window .bp2-name{flex:0;font-size:17px}
+#bloxplox-v2 .bp2-list .calendar-window .bp2-meta{align-self:flex-start;font-size:11px}
+#bloxplox-v2 .calendar-event{outline:1px solid #ffffff55;outline-offset:-3px}
+#bloxplox-v2 .calendar-event .bp2-face{touch-action:pan-y}
+#bloxplox-v2 .calendar-all-day{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px}
+#bloxplox-v2 .calendar-all-day>.bp2-block{flex:1;min-width:140px;min-height:85px}
+#bloxplox-v2 .calendar-all-day .bp2-name{font-size:17px}
+#bloxplox-v2 .calendar-account{border-top:1px solid var(--b-line);padding:20px 0}
+#bloxplox-v2 .calendar-account h2{font-size:15px;overflow-wrap:anywhere}
+#bloxplox-v2 .calendar-notes{white-space:pre-wrap;font-size:12px;margin-bottom:20px}
