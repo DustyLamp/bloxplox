@@ -13,6 +13,7 @@
 ## Blocks
 
 - Add a name, start time, duration, and categories. Add a category from a block or the category catalog.
+- Click or tap Available to add a block at that position, snapped to fifteen minutes. Grid reads the horizontal position; List reads the vertical position. The editor starts with a one-hour duration, shortened only at midnight. Keyboard activation uses the start of the available space. Saving confirms the block; cancelling leaves the schedule unchanged. Existing overlap choices apply when the hour extends into another block.
 - Resize using the seam; following blocks move where necessary.
 - Press and hold for approximately 350 ms to lift a block, then drag. Show a floating preview and an insertion cue.
 - Desktop hover/focus reveals a discreet grip for immediate dragging. Arrow keys work on the grip; clicking it opens a position picker.

@@ -54,7 +54,7 @@ function Main() {
   </View>{['blocks', 'habits'].includes(page) && <History date={date} change={setDate}/>}
   <ScrollView ref={scroll} scrollEnabled={!dragging} keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>
     {!!error && <View style={s.card}><ErrorText message={error}/><Button onPress={() => setError('')}>Dismiss</Button></View>}
-    {page === 'blocks' && <Blocks date={date} openCalendar={slot => setDialog({ type: 'calendar-event', slot })} moving={setDragging} edit={block => setDialog({ type: 'block', block })} add={start => setDialog({ type: 'block', block: blankBlock(date, start ?? settings.dayStart) })}/>}
+    {page === 'blocks' && <Blocks date={date} openCalendar={slot => setDialog({ type: 'calendar-event', slot })} moving={setDragging} edit={block => setDialog({ type: 'block', block })} add={(start, duration) => setDialog({ type: 'block', block: blankBlock(date, start ?? settings.dayStart, duration) })}/>}
     {page === 'habits' && <Habits date={date} edit={habit => setDialog({ type: 'result', habit })} add={() => setDialog({ type: 'habit' })}/>}
     {page === 'things' && <Things date={date} edit={thing => setDialog({ type: 'thing', thing })} graph={graph} block={block => setDialog({ type: 'block', block })}/>}
     {page === 'graph' && <><Button onPress={() => go('things')}>‹ Things</Button><Graph key={graphFocus} focus={graphFocus} date={date} edit={id => setDialog({ type: 'thing', thing: entities(docs, 'thing').find(t => t.id === id) })}/></>}

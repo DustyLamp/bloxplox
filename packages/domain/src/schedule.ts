@@ -89,3 +89,11 @@ export function categoryMinutes(docs: Document[], from: string, to: string): Rec
   }
   return totals;
 }
+
+// Keep a click within its available window when a fifteen-minute start fits.
+// Keyboard and assistive activation use the first start in the window.
+export function startInAvailableSpace(start: number, duration: number, fraction = 0) {
+  const first = Math.ceil(start / 15) * 15, last = Math.floor((start + duration - 1) / 15) * 15;
+  const picked = Math.round((start + Math.max(0, Math.min(1, fraction)) * duration) / 15) * 15;
+  return Math.min(1425, Math.max(0, first, Math.min(last, picked)));
+}

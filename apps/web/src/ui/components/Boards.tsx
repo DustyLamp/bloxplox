@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Check, X, GripVertical, Link, Repeat, Plus, Minus } from 'lucide-react';
-import { blockResultId, calendarDay, calendarWindows, completionWithStatus, dayBlocks, dueHabits, entities, formatDuration, formatTime, getCompletion, insertBlock, resultId, thingsInBlock, type CalendarSlot, type ScheduleWindow, type Block, type Habit } from '../../../../../packages/domain/src/index';
+import { blockResultId, calendarDay, calendarWindows, completionWithStatus, dayBlocks, dueHabits, entities, formatDuration, formatTime, getCompletion, insertBlock, resultId, startInAvailableSpace, thingsInBlock, type CalendarSlot, type ScheduleWindow, type Block, type Habit } from '../../../../../packages/domain/src/index';
 import { useData, useSettings } from '../../commons/data';
 import { useActions } from '../../domain/actions';
 import { Swipe } from './Swipe';
@@ -13,7 +13,7 @@ export function useCategoryFill() {
   };
 }
 type Move = { block: Block; x: number; y: number; start: number | null; target: string | null; after: boolean; moved: boolean; originX: number; originY: number };
-export function Blocks({ date, edit, add, movePicker, report, openCalendar }: { openCalendar(slot: CalendarSlot): void; date: string; edit: (b: Block) => void; add: (start?: number) => void; movePicker: (b: Block) => void; report: (message: string) => void }) {
+export function Blocks({ date, edit, add, movePicker, report, openCalendar }: { openCalendar(slot: CalendarSlot): void; date: string; edit: (b: Block) => void; add: (start?: number, duration?: number) => void; movePicker: (b: Block) => void; report: (message: string) => void }) {
   const { docs } = useData(), { settings } = useSettings(), actions = useActions(), fill = useCategoryFill();
   const blocks = dayBlocks(docs, date), [small, setSmall] = useState(window.innerWidth < 560), [moving, setMoving] = useState<Move | null>(null);
   const moveRef = useRef<Move | null>(null), board = useRef<HTMLDivElement>(null);
@@ -52,7 +52,13 @@ export function Blocks({ date, edit, add, movePicker, report, openCalendar }: { 
     const target = moving?.target === (b?.id ?? 'available') && (b || moving.start! >= slotStart && moving.start! < slotStart + length);
     const className = `bp2-block ${!b ? 'bp2-free' : ''} ${length <= 45 && !isList ? 'bp2-small' : ''} ${length <= 15 && !isList ? 'bp2-tiny' : ''} ${['done', 'missed'].includes(status) ? `bp2-recorded ${status === 'done' ? 'bp2-isdone' : 'bp2-ismissed'}` : ''} ${moving?.block.id === b?.id ? 'bp2-moving' : ''} ${target ? moving?.after ? 'bp2-drop-after' : 'bp2-drop-before' : ''}`;
     const style = { ...(isList ? { height: Math.max(68, length * 2) } : {}), background: b ? fill(b.categories) : undefined, gridColumn: `span ${length / 15}`, '--bp2-drop-x': `${moving?.start ? (moving.start - slotStart) / length * 100 : 0}%` } as CSSProperties;
-    const face = <button type="button" className="bp2-face" onClick={() => b ? edit(b) : add(Math.min(1425, Math.ceil(slotStart / 15) * 15))} data-open={b?.id} aria-label={b ? `${formatTime(slotStart)} ${b.name} ${formatDuration(b.timing.duration)}` : `Available ${formatTime(slotStart)} ${formatDuration(length)}`}>
+    const face = <button type="button" className="bp2-face" title={b ? undefined : 'Add a one-hour block'} onClick={event => {
+      if (b) return edit(b);
+      if (moveRef.current || resize) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      const fraction = event.detail === 0 ? 0 : isList ? (event.clientY - rect.top) / rect.height : (event.clientX - rect.left) / rect.width;
+      add(startInAvailableSpace(slotStart, length, fraction), 60);
+    }} data-open={b?.id} aria-label={b ? `${formatTime(slotStart)} ${b.name} ${formatDuration(b.timing.duration)}` : `Available ${formatTime(slotStart)} ${formatDuration(length)}`}>
       <span className="bp2-time">{formatTime(slotStart)}{b?.habitId && <span className="bp2-linkicon" aria-label="Linked habit">{b.ruleId ? <Repeat/> : <Link/>}</span>}</span><span className="bp2-name">{b?.name ?? 'Available'}</span>
       {b && <span className="bp2-meta">{formatDuration(resize?.id === b.id ? resize.next : b.timing.duration)}{thingsInBlock(docs, b).length > 0 && <span className="block-things"> · {thingsInBlock(docs, b).filter(t => t.completedOn).length}/{thingsInBlock(docs, b).length} things</span>}</span>}
       {['done', 'missed'].includes(status) && <span className="bp2-completionstamp" role="img" aria-label={status === 'done' ? 'Completed' : 'Not done'}>{status === 'done' ? <Check/> : <X/>}</span>}
