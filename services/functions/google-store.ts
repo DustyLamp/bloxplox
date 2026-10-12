@@ -15,9 +15,9 @@ export async function items<T>(owner: string, prefix: string) {
   do { const page = await ddb.send(new QueryCommand({ TableName: table(), KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)', ExpressionAttributeValues: { ':pk': pk(owner), ':prefix': prefix }, ConsistentRead: true, ExclusiveStartKey: cursor })); result.push(...page.Items as T[] ?? []); cursor = page.LastEvaluatedKey; } while (cursor);
   return result;
 }
-export async function saveImported<K extends Kind>(owner: string, id: string, kind: K, data: Partial<DataByKind[K]>, deleted = false) {
+export async function saveImported<K extends Kind>(owner: string, id: string, kind: K, data: Partial<DataByKind[K]>, deleted = false, initialData: Partial<DataByKind[K]> = {}) {
   for (let attempt = 0; attempt < 12; attempt++) {
-    const old = await getDocument(owner, id), next = editDocument(old, id, kind, data, 'google-import', deleted);
+    const old = await getDocument(owner, id), next = editDocument(old, id, kind, old ? data : { ...initialData, ...data }, 'google-import', deleted);
     documentSchema.parse(next);
     if (old && sameContent(old, next)) return;
     if (!await pushDocument(owner, { newDocumentState: next, assumedMasterState: old })) return;

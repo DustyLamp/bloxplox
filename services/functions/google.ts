@@ -15,14 +15,20 @@ async function updateCalendars(owner: string, account: GoogleAccount) {
   const token = await googleToken(owner, account, config); let pageToken: string | undefined;
   const seen = new Set<string>();
   do {
-    const response: GoogleList = await googleFetch(`https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`, token);
+    const response: GoogleList = await googleFetch(`https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250&fields=nextPageToken,items(id,summary,backgroundColor,timeZone,accessRole,deleted)${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`, token);
     for (const calendar of response.items ?? []) {
       if (calendar.deleted || calendar.accessRole === 'freeBusyReader') continue;
       const id = stableId('calendar', account.id, calendar.id), previous = await item<GoogleSource>(owner, `GCALSOURCE#${id}`); seen.add(id);
       const source: GoogleSource = { pk: pk(owner), sk: `GCALSOURCE#${id}`, id, accountId: account.id, calendarId: calendar.id, enabled: previous?.enabled ?? false };
       // Refresh display metadata without overwriting a running worker's locks/checkpoint.
-      if (!previous) await ddb.send(new PutCommand({ TableName: table(), Item: source, ConditionExpression: 'attribute_not_exists(pk)' }));
-      await saveImported(owner, id, 'calendarSource', { name: (calendar.summary || 'Calendar').slice(0, 120), color: /^#[0-9a-f]{6}$/i.test(calendar.backgroundColor || '') ? calendar.backgroundColor! : '#70b4ff', accountId: account.id, accountEmail: account.email, timezone: calendar.timeZone || 'UTC', enabled: source.enabled });
+      if (!previous) {
+        try { await ddb.send(new PutCommand({ TableName: table(), Item: source, ConditionExpression: 'attribute_not_exists(pk)' })); }
+        catch (error) { if ((error as Error).name !== 'ConditionalCheckFailedException') throw error; }
+      }
+      // Discovery changes metadata, never a selection made on another device.
+      // The initial selection is applied only if the replicated record is absent,
+      // including after a conditional-write conflict and retry.
+      await saveImported(owner, id, 'calendarSource', { name: (calendar.summary || 'Calendar').slice(0, 120), color: /^#[0-9a-f]{6}$/i.test(calendar.backgroundColor || '') ? calendar.backgroundColor! : '#70b4ff', accountId: account.id, accountEmail: account.email, timezone: calendar.timeZone || 'UTC' }, false, { enabled: source.enabled });
     }
     pageToken = response.nextPageToken;
   } while (pageToken);

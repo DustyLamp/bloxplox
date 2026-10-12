@@ -1,6 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Platform, ScrollView, Text, View } from 'react-native';
 import type { AuthService } from '../../../packages/auth/src/index';
 import { Button, ErrorText, Field, Logo, s, Txt, useWork } from './ui';
 export function Auth({ auth, signedIn, initialError = '' }: { auth: AuthService; initialError?: string; signedIn(): Promise<void> }) {
@@ -26,5 +26,6 @@ export function Auth({ auth, signedIn, initialError = '' }: { auth: AuthService;
     <Button primary disabled={busy || !email} onPress={submit}>{busy ? 'Working…' : mode === 'login' ? 'Sign in' : mode === 'signup' ? 'Create account' : mode === 'confirm' ? 'Verify email' : 'Continue'}</Button>
     {mode === 'confirm' && <Button disabled={busy} onPress={() => void run(async () => { await auth.resend(email); setMessage('A new code has been sent.'); })}>Resend code</Button>}
     {mode === 'login' ? <><Button onPress={() => setMode('signup')}>Create account</Button><Button onPress={() => setMode('forgot')}>Forgot password</Button></> : <Button onPress={() => setMode('login')}>Back to sign in</Button>}
+    <Button onPress={() => void run(() => Linking.openURL('https://bloxplox.com/privacy'))}>Privacy</Button>
   </ScrollView></KeyboardAvoidingView>;
 }
