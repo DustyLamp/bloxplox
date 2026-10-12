@@ -1,6 +1,6 @@
 # BloxPlox
 
-Daily Blocks, recurring habits in Habits, and one-off tasks in Things. Plan sessions containing several Things, with shared task completion wherever they appear. The React application lives in `apps/web`; the approved design remains runnable in `apps/prototype`.
+Blocks for your day, Habits for routines, and Things for one-off tasks. Plan sessions containing several Things, with shared task completion wherever they appear. The React application lives in `apps/web`; the approved design remains runnable in `apps/prototype`.
 
 ## Development
 
@@ -68,3 +68,12 @@ yarn workspace @bloxplox/mobile export --max-workers 2
 ```
 
 The native app uses the same records, recurrence, completion, prerequisites, schedule actions, authentication and replication as the browser app. Credentials use SecureStore; account-specific RxDB data uses transactional SQLite. The React Flow graph runs in a bundled offline DOM component, alongside native prerequisite controls. Native social sign-in uses the system browser and the `bloxplox://auth` callback; it requires an installed build with the app's URL scheme, rather than Expo Go.
+
+
+Native preview builds are manual and do not deploy production:
+
+```sh
+gh workflow run native.yml --ref main -f platform=both
+```
+
+Use `android` or `ios` to build only one platform. The workflow produces an Android APK with development signing and a Release iOS simulator application; artifacts expire after one day. Physical iPhone/TestFlight builds require the Apple Developer team and signing setup. Google and Apple buttons appear only when their provider configuration is active.
