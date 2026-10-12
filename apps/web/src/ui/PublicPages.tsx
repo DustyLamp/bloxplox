@@ -16,7 +16,7 @@ export function PublicPage({ page }: { page: 'about' | 'privacy' }) {
       <p>All features are free during the preview. No card required.</p>
     </> : <>
       <h1>Privacy</h1><p className="bp2-muted">Updated 12 October 2026</p>
-      <p>This policy covers BloxPlox at bloxplox.com and the BloxPlox mobile app. Contact BloxPlox at <a href="mailto:hello@bloxplox.com">hello@bloxplox.com</a> about support, privacy, access or deletion.</p>
+      <p>This policy covers BloxPlox at bloxplox.com and the BloxPlox mobile app. Contact BloxPlox at <a href="mailto:iamjeza@gmail.com">iamjeza@gmail.com</a> about support, privacy, access or deletion.</p>
       <h2>What we keep and why</h2>
       <p>We keep your account identifier and verified email to sign you in, recover access and keep your data separate from other accounts. We store the Blocks, Habits, Things, prerequisites, notes, categories, completion history, templates and settings you enter to provide the planner and synchronize your devices.</p>
       <p>Authentication is handled by Amazon Cognito. BloxPlox does not store a readable copy of your password. Service providers may process request information such as IP addresses and error metadata to deliver and protect the service.</p>
@@ -31,9 +31,9 @@ export function PublicPage({ page }: { page: 'about' | 'privacy' }) {
       <h2>Your choices and retention</h2>
       <p>You can export your planner records from Settings. Editing or deleting records synchronizes to your other devices. We retain account data and synchronization history while your account remains open, including older revisions needed for reliable offline catch-up.</p>
       <p>Disconnecting a Google account in Calendars removes its active connection tokens, attempts to revoke Google access, and stops its calendars appearing. Previously imported records, synchronization history and device copies can remain; disconnecting is not an account deletion. You can also revoke access in your <a href="https://myaccount.google.com/connections">Google Account connections</a>.</p>
-      <p>To request deletion of your account or imported calendar data, email <a href="mailto:hello@bloxplox.com">hello@bloxplox.com</a> from your account email. We verify ownership before removing account data. Copies in rotating backups may remain until those backups expire. Clear BloxPlox’s browser storage or remove its mobile app to remove local planner copies from a device; signing out alone keeps them for your next sign-in.</p>
+      <p>To request deletion of your account or imported calendar data, email <a href="mailto:iamjeza@gmail.com">iamjeza@gmail.com</a> from your account email. We verify ownership before removing account data. Copies in rotating backups may remain until those backups expire. Clear BloxPlox’s browser storage or remove its mobile app to remove local planner copies from a device; signing out alone keeps them for your next sign-in.</p>
       <h2>Updates</h2><p>We update this page when data handling changes. A new use of Google data requires an updated disclosure and your consent before that new use begins.</p>
     </>}
-    <footer><a href="/about">About</a><a href="/privacy">Privacy</a><a href="mailto:hello@bloxplox.com">Contact</a></footer>
+    <footer><a href="/about">About</a><a href="/privacy">Privacy</a><a href="mailto:iamjeza@gmail.com">Contact</a></footer>
   </main></div>;
 }
