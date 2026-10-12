@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Check, X, GripVertical, Link, Repeat, Plus, Minus } from 'lucide-react';
-import { blockResultId, completionWithStatus, dayBlocks, dueHabits, entities, formatDuration, formatTime, getCompletion, insertBlock, resultId, thingsInBlock, type Block, type Habit } from '../../../../../packages/domain/src/index';
+import { blockResultId, calendarDay, calendarWindows, completionWithStatus, dayBlocks, dueHabits, entities, formatDuration, formatTime, getCompletion, insertBlock, resultId, thingsInBlock, type CalendarSlot, type ScheduleWindow, type Block, type Habit } from '../../../../../packages/domain/src/index';
 import { useData, useSettings } from '../../commons/data';
 import { useActions } from '../../domain/actions';
 import { Swipe } from './Swipe';
@@ -13,7 +13,7 @@ export function useCategoryFill() {
   };
 }
 type Move = { block: Block; x: number; y: number; start: number | null; target: string | null; after: boolean; moved: boolean; originX: number; originY: number };
-export function Blocks({ date, edit, add, movePicker, report }: { date: string; edit: (b: Block) => void; add: (start?: number) => void; movePicker: (b: Block) => void; report: (message: string) => void }) {
+export function Blocks({ date, edit, add, movePicker, report, openCalendar }: { openCalendar(slot: CalendarSlot): void; date: string; edit: (b: Block) => void; add: (start?: number) => void; movePicker: (b: Block) => void; report: (message: string) => void }) {
   const { docs } = useData(), { settings } = useSettings(), actions = useActions(), fill = useCategoryFill();
   const blocks = dayBlocks(docs, date), [small, setSmall] = useState(window.innerWidth < 560), [moving, setMoving] = useState<Move | null>(null);
   const moveRef = useRef<Move | null>(null), board = useRef<HTMLDivElement>(null);
@@ -21,8 +21,9 @@ export function Blocks({ date, edit, add, movePicker, report }: { date: string; 
   const resizing = blocks.find(b => b.id === resize?.id);
   const displayed = resize && resizing ? insertBlock(blocks, { ...resizing, timing: { ...resizing.timing, duration: resize.next } }) ?? blocks : blocks;
   const isList = settings.layout === 'list', period = small ? 120 : 240;
-  const start = Math.min(settings.dayStart, ...displayed.map(b => Math.floor(b.timing.start / period) * period));
-  const end = Math.min(1440, Math.max(Math.min(start + period * (small ? 4 : 3), 1440), start + Math.ceil((Math.max(start, ...displayed.map(b => b.timing.start + b.timing.duration)) - start) / period) * period));
+  const imported = calendarDay(docs, date, settings.timezone), timed = imported.filter(s => !s.event.allDay);
+  const start = Math.min(settings.dayStart, ...timed.map(s => Math.floor(s.start / period) * period), ...displayed.map(b => Math.floor(b.timing.start / period) * period));
+  const end = Math.min(1440, Math.max(Math.min(start + period * (small ? 4 : 3), 1440), start + Math.ceil((Math.max(start, ...timed.map(s => s.start + s.duration), ...displayed.map(b => b.timing.start + b.timing.duration)) - start) / period) * period));
   useEffect(() => { const fn = () => setSmall(window.innerWidth < 560); window.addEventListener('resize', fn); return () => window.removeEventListener('resize', fn); }, []);
   const run = (job: Promise<unknown>) => { void job.catch(e => report((e as Error).message)); };
   const beginMove = useCallback((block: Block, x: number, y: number) => { const next: Move = { block, x, y, start: null, target: null, after: false, moved: false, originX: x, originY: y }; moveRef.current = next; setMoving(next); }, []);
@@ -34,7 +35,7 @@ export function Blocks({ date, edit, add, movePicker, report }: { date: string; 
     if (hit && hit.dataset.block !== m.block.id) {
       const r = hit.getBoundingClientRect(); after = isList ? y > r.top + r.height / 2 : x > r.left + r.width / 2;
       target = hit.dataset.block!;
-      if (target === 'available') { after = false; const minutes = Number(hit.dataset.slotMinutes); targetStart = Number(hit.dataset.slotStart) + (isList ? 0 : Math.min(minutes - 15, Math.max(0, Math.floor((x - r.left) / r.width * minutes / 15) * 15))); }
+      if (target === 'available') { after = false; const minutes = Number(hit.dataset.slotMinutes); targetStart = Math.max(0, Math.min(1440 - m.block.timing.duration, Math.round((Number(hit.dataset.slotStart) + Math.max(0, Math.min(minutes - 1, (isList ? (y - r.top) / r.height : (x - r.left) / r.width) * minutes))) / 15) * 15)); }
       else { const b = blocks.find(b => b.id === target); if (b) targetStart = b.timing.start + (after ? b.timing.duration : 0); }
     }
     const next = { ...m, x, y, target, after, start: targetStart, moved: m.moved || Math.hypot(x - m.originX, y - m.originY) > 8 }; moveRef.current = next; setMoving(next);
@@ -45,12 +46,13 @@ export function Blocks({ date, edit, add, movePicker, report }: { date: string; 
   let at = start;
   for (const b of displayed.filter(b => b.timing.start < 1440)) { if (b.timing.start > at) segments.push({ start: at, duration: b.timing.start - at }); segments.push({ block: b, start: b.timing.start, duration: Math.min(b.timing.duration, 1440 - b.timing.start) }); at = b.timing.start + b.timing.duration; }
   if (at < end) segments.push({ start: at, duration: end - at });
+  const windows = calendarWindows(docs, date, settings.timezone, start, end, displayed);
   function renderSegment(segment: typeof segments[number], slotStart: number, length: number, key: string) {
     const b = segment.block, status = b ? getCompletion(docs, blockResultId(b)).status : 'none';
     const target = moving?.target === (b?.id ?? 'available') && (b || moving.start! >= slotStart && moving.start! < slotStart + length);
     const className = `bp2-block ${!b ? 'bp2-free' : ''} ${length <= 45 && !isList ? 'bp2-small' : ''} ${length <= 15 && !isList ? 'bp2-tiny' : ''} ${['done', 'missed'].includes(status) ? `bp2-recorded ${status === 'done' ? 'bp2-isdone' : 'bp2-ismissed'}` : ''} ${moving?.block.id === b?.id ? 'bp2-moving' : ''} ${target ? moving?.after ? 'bp2-drop-after' : 'bp2-drop-before' : ''}`;
-    const style = { background: b ? fill(b.categories) : undefined, gridColumn: `span ${length / 15}`, '--bp2-drop-x': `${moving?.start ? (moving.start - slotStart) / length * 100 : 0}%` } as CSSProperties;
-    const face = <button type="button" className="bp2-face" onClick={() => b ? edit(b) : add(slotStart)} data-open={b?.id} aria-label={b ? `${formatTime(slotStart)} ${b.name} ${formatDuration(b.timing.duration)}` : `Available ${formatTime(slotStart)} ${formatDuration(length)}`}>
+    const style = { ...(isList ? { height: Math.max(68, length * 2) } : {}), background: b ? fill(b.categories) : undefined, gridColumn: `span ${length / 15}`, '--bp2-drop-x': `${moving?.start ? (moving.start - slotStart) / length * 100 : 0}%` } as CSSProperties;
+    const face = <button type="button" className="bp2-face" onClick={() => b ? edit(b) : add(Math.min(1425, Math.ceil(slotStart / 15) * 15))} data-open={b?.id} aria-label={b ? `${formatTime(slotStart)} ${b.name} ${formatDuration(b.timing.duration)}` : `Available ${formatTime(slotStart)} ${formatDuration(length)}`}>
       <span className="bp2-time">{formatTime(slotStart)}{b?.habitId && <span className="bp2-linkicon" aria-label="Linked habit">{b.ruleId ? <Repeat/> : <Link/>}</span>}</span><span className="bp2-name">{b?.name ?? 'Available'}</span>
       {b && <span className="bp2-meta">{formatDuration(resize?.id === b.id ? resize.next : b.timing.duration)}{thingsInBlock(docs, b).length > 0 && <span className="block-things"> · {thingsInBlock(docs, b).filter(t => t.completedOn).length}/{thingsInBlock(docs, b).length} things</span>}</span>}
       {['done', 'missed'].includes(status) && <span className="bp2-completionstamp" role="img" aria-label={status === 'done' ? 'Completed' : 'Not done'}>{status === 'done' ? <Check/> : <X/>}</span>}
@@ -67,8 +69,16 @@ export function Blocks({ date, edit, add, movePicker, report }: { date: string; 
         onKeyDown={e => { const delta = ['ArrowLeft', 'ArrowDown'].includes(e.key) ? -15 : ['ArrowRight', 'ArrowUp'].includes(e.key) ? 15 : 0; if (!delta) return; e.preventDefault(); run(actions.place({ ...b, timing: { ...b.timing, duration: Math.max(15, b.timing.duration + delta) } })); }}/>
     </div>;
   }
-  return <><div ref={board} data-resizing={!!resize} className={`${isList ? 'bp2-list' : 'bp2-grid'} ${moving ? 'bp2-rearranging' : ''}`}>
-    {isList ? segments.map((s, i) => renderSegment(s, s.start, s.duration, `${s.block?.id}-${i}`)) : Array.from({ length: Math.ceil((end - start) / period) }, (_, row) => <div className="bp2-band" data-period={period} key={row} style={{ gridTemplateColumns: `repeat(${period / 15}, minmax(0, 1fr))` }}>{segments.flatMap((s, i) => { const a = Math.max(start + row * period, s.start), z = Math.min(start + (row + 1) * period, s.start + s.duration); return z > a ? [renderSegment(s, a, z - a, `${row}-${i}`)] : []; })}</div>)}
+  function renderCalendar(slot: CalendarSlot, from: number, length: number, key: string) {
+    return <div key={key} className={`bp2-block calendar-event ${length <= 45 && !isList ? 'bp2-small' : ''} ${length <= 15 && !isList ? 'bp2-tiny' : ''}`} style={{ background: slot.color }} data-calendar-event={slot.event.id}><button className="bp2-face" onClick={() => openCalendar(slot)} aria-label={`${slot.event.name} · ${slot.event.allDay ? 'All day' : formatTime(from)} · ${slot.sourceName}`}><span className="bp2-time">{slot.event.allDay ? 'All day' : formatTime(from)}</span><span className="bp2-name">{slot.event.name}</span><span className="bp2-meta">{slot.sourceName}</span></button></div>;
+  }
+  function renderWindow(window: ScheduleWindow, from: number, length: number, key: string) {
+    return <div key={key} className="calendar-window" data-window-start={from} data-window-duration={length} data-overlap={window.items.length > 1} style={isList ? { minHeight: Math.max(88, length * 2) } : { flexGrow: length, flexBasis: 0 }}>
+      {window.items.length ? window.items.map(item => item.calendar ? renderCalendar(item.calendar, from, length, item.id) : renderSegment({ block: item.block, start: from, duration: length }, from, length, item.id)) : renderSegment({ start: from, duration: length }, from, length, 'available')}
+    </div>;
+  }
+  return <>{imported.some(s => s.event.allDay) && <div className="calendar-all-day">{imported.filter(s => s.event.allDay).map(s => renderCalendar(s, 0, 1440, s.event.id))}</div>}<div ref={board} data-resizing={!!resize} className={`${isList ? 'bp2-list' : 'bp2-grid'} ${moving ? 'bp2-rearranging' : ''}`}>
+    {timed.length ? isList ? windows.map((w, i) => renderWindow(w, w.start, w.duration, String(i))) : Array.from({ length: Math.ceil((end - start) / period) }, (_, row) => <div className="bp2-band calendar-band" data-period={period} key={row}>{windows.flatMap((w, i) => { const a = Math.max(start + row * period, w.start), z = Math.min(start + (row + 1) * period, w.start + w.duration); return z > a ? [renderWindow(w, a, z - a, `${row}-${i}`)] : []; })}</div>) : isList ? segments.map((s, i) => renderSegment(s, s.start, s.duration, `${s.block?.id}-${i}`)) : Array.from({ length: Math.ceil((end - start) / period) }, (_, row) => <div className="bp2-band" data-period={period} key={row} style={{ gridTemplateColumns: `repeat(${period / 15}, minmax(0, 1fr))` }}>{segments.flatMap((s, i) => { const a = Math.max(start + row * period, s.start), z = Math.min(start + (row + 1) * period, s.start + s.duration); return z > a ? [renderSegment(s, a, z - a, `${row}-${i}`)] : []; })}</div>)}
   </div>{moving && <div className="bp2-dragpreview" style={{ position: 'fixed', left: moving.x - 90, top: moving.y - 55, width: 180, height: 110, background: fill(moving.block.categories) }}><div className="bp2-face"><span className="bp2-time">{formatTime(moving.start ?? moving.block.timing.start)}</span><span className="bp2-name">{moving.block.name}</span></div></div>}
     {blocks.some(b => b.timing.start + b.timing.duration > 1440) && <div className="overflow-blocks"><p>These blocks need another time.</p>{blocks.filter(b => b.timing.start + b.timing.duration > 1440).map(b => <button key={b.id} onClick={() => edit({ ...b, timing: { ...b.timing, start: Math.min(b.timing.start, 1440 - b.timing.duration) } })}>{b.name} · Move or add to backlog</button>)}</div>}
     <button type="button" className="bp2-fab" aria-label="Add a block" onClick={() => add()}><Plus/></button></>;

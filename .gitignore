@@ -13,3 +13,13 @@ playwright-report/
 config.local.json
 
 apps/web/public/config.json
+
+.expo/
+apps/mobile/ios/
+apps/mobile/android/
+*.ipa
+*.apk
+*.aab
+
+build-ios/
+*.tar.gz

@@ -2,10 +2,10 @@ import { useState, type FormEvent } from 'react';
 import type { AuthService } from '../domain/auth';
 import { Button, ErrorText, Field, Logo } from './components/common';
 
-export function Auth({ auth, onSignedIn }: { auth: AuthService; onSignedIn: () => Promise<void> }) {
+export function Auth({ auth, onSignedIn, initialError = '' }: { auth: AuthService; initialError?: string; onSignedIn: () => Promise<void> }) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'verify' | 'forgot' | 'reset'>('signin');
   const [email, setEmail] = useState(''), [password, setPassword] = useState(''), [code, setCode] = useState('');
-  const [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false);
+  const [error, setError] = useState(initialError), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false);
   const title = { signin: 'Sign in', signup: 'Create an account', verify: 'Verify your email', forgot: 'Reset password', reset: 'Choose a new password' }[mode];
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(''); setNotice('');
@@ -17,10 +17,12 @@ export function Auth({ auth, onSignedIn }: { auth: AuthService; onSignedIn: () =
       if (mode === 'reset') { await auth.reset(email, code, password); setCode(''); setPassword(''); setMode('signin'); setNotice('Password updated.'); }
     } catch (err) {
       if (err instanceof Error && err.name === 'UserNotConfirmedException') { setMode('verify'); setNotice('Enter the code sent to your email.'); }
+      else if (err instanceof Error && err.name === 'UsernameExistsException') { setMode('signin'); setPassword(''); setNotice('An account already uses this email. Sign in, or use Forgot password to add an email password to a Google or Apple account.'); }
       else setError(err instanceof Error ? err.message : 'Could not continue. Try again.');
     } finally { setBusy(false); }
   }
   return <main className="auth-shell"><Logo/><section className="auth-card"><h1>{title}</h1>
+    {['signin', 'signup'].includes(mode) && auth.config.socialProviders?.map(provider => <Button key={provider} className="bp2-full auth-social" disabled={busy} onClick={async () => { setBusy(true); setError(''); try { window.location.assign(await auth.socialSignIn(provider, `${location.origin}/auth/callback`)); } catch (e) { setError((e as Error).message); setBusy(false); } }}>Continue with {provider === 'Google' ? 'Google' : 'Apple'}</Button>)}
     <form onSubmit={submit}>
       <Field label="Email"><input type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)}/></Field>
       {['signin', 'signup', 'reset'].includes(mode) && <Field label="Password"><input type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} required minLength={mode === 'signin' ? 1 : 8} value={password} onChange={e => setPassword(e.target.value)}/></Field>}

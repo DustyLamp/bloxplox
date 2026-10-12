@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowUp, ArrowDown, Plus, Pencil, Repeat, Bell } from 'lucide-react';
 import { categoryMinutes, changedFields, completionStats, dayBlocks, entities, formatDate, formatDuration, formatTime, getCompletion, localDate, resultId, shiftDate, type Block, type Habit, type Rule } from '../../../../../packages/domain/src/index';
+import { useBilling } from '../../commons/billing';
 import { useData, useSettings } from '../../commons/data';
 import { useActions } from '../../domain/actions';
 import { Button, Dialog, ErrorText, Field, IconButton, Select } from './common';
@@ -29,6 +30,7 @@ export function ManageHabits({ add, edit, schedule }: { add: () => void; edit: (
   return <section className="bp2-content"><div className="bp2-sectionhead"><h1>Habits</h1><Button onClick={add}><Plus/>Add habit</Button></div>{entities(docs, 'habit').map(h => <div className="bp2-listrow" key={h.id}><button className="bp2-listtext" onClick={() => edit(h)}><strong>{h.name}</strong><small>{h.active ? `${h.weekdays.length} days a week` : 'Inactive'}{h.type === 'value' ? ` · ${h.target} ${h.unit}` : ''}</small></button><Button onClick={() => edit(h)}>Edit</Button></div>)}<div className="bp2-sectionhead recurring-heading"><h2>Recurring blocks</h2></div>{entities(docs, 'rule').map(r => <button key={r.id} className="bp2-option" onClick={() => schedule(r)}><Repeat/><span>{r.name}<small>{r.recurrence.repeat} · {formatTime(r.start)}</small></span></button>)}</section>;
 }
 export function Reports({ date, habit }: { date: string; habit?: Habit }) {
+  const { plus } = useBilling();
   const { docs } = useData(), [from, setFrom] = useState(shiftDate(date, -89)), [to, setTo] = useState(date);
   const safeRange = from <= to && Date.parse(`${to}T12:00Z`) - Date.parse(`${from}T12:00Z`) <= 366 * 86400000;
   const categories = entities(docs, 'category'), totals = safeRange ? categoryMinutes(docs, from, to) : {};
@@ -42,7 +44,7 @@ export function Reports({ date, habit }: { date: string; habit?: Habit }) {
   return <section className="bp2-content"><div className="bp2-sectionhead"><h1>{habit ? `${habit.name} stats` : 'History'}</h1></div><div className="bp2-fields"><Field label="From"><input type="date" value={from} onChange={e => setFrom(e.target.value)}/></Field><Field label="To"><input type="date" value={to} onChange={e => setTo(e.target.value)}/></Field></div>
     {!safeRange ? <ErrorText message="Choose a period of up to one year."/> : <><p className="bp2-stat">{done}<small> / {total} done</small></p>{habit?.type === 'value' && <p>{sum} {habit.unit} recorded</p>}
       <div className="report-history" aria-label="Completion history">{bars.map(bar => <div key={bar.date} title={`${formatDate(bar.date)}: ${bar.done} / ${bar.total}`} style={{ height: `${bar.total ? Math.max(2, bar.done / bar.total * 100) : 2}%` }}/>)}</div>
-      {!habit && <><h2>Completed time by category</h2><p className="bp2-muted">Time shared by several categories is divided equally.</p>{categories.map(c => <div className="category-report" key={c.id}><span>{c.name}</span><strong>{formatDuration(Math.round(totals[c.id] ?? 0))}</strong><div style={{ width: `${(totals[c.id] ?? 0) / max * 100}%`, background: c.color }}/></div>)}</>}
+      {!habit && !plus && <p className="pricing-notice">Detailed category reports are included in Plus. <a href="/pricing">Compare plans</a></p>}{!habit && plus && <><h2>Completed time by category</h2><p className="bp2-muted">Time shared by several categories is divided equally.</p>{categories.map(c => <div className="category-report" key={c.id}><span>{c.name}</span><strong>{formatDuration(Math.round(totals[c.id] ?? 0))}</strong><div style={{ width: `${(totals[c.id] ?? 0) / max * 100}%`, background: c.color }}/></div>)}</>}
     </>}
   </section>;
 }

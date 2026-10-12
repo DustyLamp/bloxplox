@@ -244,6 +244,29 @@ try {
   await expect(pageA.getByRole('button', { name: /Edit QA/ })).toHaveCount(0);
   assert.deepEqual(errors, [], 'Browser runtime errors');
   record('Signing out and switching accounts isolates local data; no browser runtime errors');
+
+  const graphThings = ['Submit application', 'Find documents'].map((name, i) => editDocument(undefined, `${prefix}-graph-${i}`, 'thing', { name, notes: '', categories: [], estimate: 15, dueDate: null, completedOn: null, order: i }, 'qa'));
+  for (const thing of graphThings) await push(a.token, thing);
+  const link = editDocument(undefined, `${prefix}-dependency`, 'prerequisite', { thingId: graphThings[0].id, prerequisiteId: graphThings[1].id }, 'qa');
+  await push(a.token, link);
+  await pageB.getByRole('button', { name: 'Things', exact: true }).click();
+  await expect(pageB.getByRole('button', { name: 'Graph for Submit application', exact: true })).toBeVisible({ timeout: 15000 });
+  await pageB.getByRole('button', { name: 'Graph for Submit application', exact: true }).click();
+  await expect(pageB.getByRole('list', { name: 'Direct prerequisites' })).toContainText('Find documents');
+  await expect(pageB.locator('.graph-detail')).toContainText('Waiting on 1');
+  await pageB.getByRole('region', { name: 'Things graph' }).getByRole('button', { name: 'Things', exact: true }).click();
+  await pageB.getByRole('button', { name: 'Complete Submit application', exact: true }).click();
+  await expect.poll(async () => (await all(a.token)).docs.get(graphThings[0].id)?.data.completedOn, { timeout: 15000 }).toBeTruthy();
+  assert(!(await all(b.token)).docs.has(link.id));
+  record('Prerequisites replicate to the mobile graph and remain isolated; waiting tasks can still be completed');
+
+  for (let i = 0; i < 7; i++) await push(a.token, editDocument(undefined, `${prefix}-free-habit-${i}`, 'habit', { name: `Preview habit ${i}`, description: '', type: 'binary', target: 1, unit: '', active: true, weekdays: [0,1,2,3,4,5,6], startDate: '2026-01-01', reminder: '', categories: [] }, 'qa'));
+  assert.equal([...(await all(a.token)).docs.values()].filter(d => d.id.startsWith(`${prefix}-free-habit-`) && d.data.active).length, 7);
+  const imported = editDocument(undefined, `${prefix}-fake-source`, 'calendarSource', { name: 'Cannot forge imports', color: '#b48aff', accountId: 'fake', accountEmail: 'qa@example.invalid', timezone: 'UTC', enabled: true }, 'qa');
+  await request(a.token, 'push', { changes: [{ newDocumentState: imported }] }, 403);
+  record('Preview accounts can exceed the former habit limit; clients cannot forge read-only calendar imports');
+  assert.deepEqual(errors, [], 'Browser runtime errors after expansion checks');
+
 } catch (error) {
   if (browser) {
     let index = 0;

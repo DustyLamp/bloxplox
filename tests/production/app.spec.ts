@@ -41,7 +41,7 @@ test('blocks persist across reload and a second tab, completion is immediate', a
 });
 test('linked habit shares completion and one layout setting', async ({ page }) => {
   await open(page); await addBlock(page, 'German', '09:00');
-  await page.getByRole('button', { name: 'Tracker', exact: true }).click();
+  await page.getByRole('button', { name: 'Habits', exact: true }).click();
   await page.getByRole('button', { name: 'Add habit', exact: true }).click();
   await page.getByLabel('Name', { exact: true }).fill('German'); await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.getByRole('button', { name: 'German', exact: true }).click(); await page.getByRole('button', { name: 'Schedule habit', exact: true }).click();
@@ -145,7 +145,7 @@ test('hold-to-move shows preview and drops into a snapped gap; Escape cancels', 
 
 test('history extends in both directions without changing the selected day', async ({ page }) => {
   await open(page);
-  const history = page.getByRole('navigation', { name: 'Combined Blocks and Tracker history' });
+  const history = page.getByRole('navigation', { name: 'Combined Blocks and Habits history' });
   const selected = await history.locator('[aria-pressed=true]').getAttribute('data-date');
   const first = await history.locator('[data-date]').first().getAttribute('data-date');
   await history.evaluate(el => { el.scrollLeft = 0; });
@@ -174,7 +174,7 @@ test('resize seam previews duration and persists the new size', async ({ page, c
 });
 
 test('numeric habits accept values, complete at target, and clear the result', async ({ page }) => {
-  await open(page); await page.getByRole('button', { name: 'Tracker', exact: true }).click();
+  await open(page); await page.getByRole('button', { name: 'Habits', exact: true }).click();
   await page.getByRole('button', { name: 'Add habit', exact: true }).click();
   await page.getByLabel('Name', { exact: true }).fill('Practice');
   await page.getByLabel('Type', { exact: true }).selectOption('value');

@@ -1,0 +1,9 @@
+.thing-graph-canvas{height:440px;min-width:0;border:1px solid #8b839b44;border-radius:18px;overflow:hidden;background:#f3f1f7;color:#282331}
+.thing-graph-canvas .react-flow__node-thing{width:210px;border-radius:14px}
+.graph-tile{height:80px;padding:14px;border-radius:14px;color:#282331;border:2px solid transparent;font-family:Poppins,system-ui,sans-serif;box-sizing:border-box}
+.graph-tile.selected{border-color:#56416f;box-shadow:0 0 0 3px #fff}.graph-tile.done{color:#276349}
+.graph-tile strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:600}.graph-tile span{display:block;font-size:10px;margin-top:6px}
+.graph-tile .react-flow__handle{height:12px;width:12px;background:#56416f;border:2px solid #fff}
+.thing-graph-canvas .react-flow__controls button{width:38px;height:38px;background:#fff;color:#282331;border-bottom:1px solid #ddd}
+.thing-graph-canvas .react-flow__attribution{font:9px system-ui,sans-serif}
+@media(max-width:650px){.thing-graph-canvas{height:300px}.graph-tile .react-flow__handle{height:18px;width:18px}}

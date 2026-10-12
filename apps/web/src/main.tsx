@@ -5,6 +5,8 @@ import { loadConfig } from './commons/config';
 import { AuthService } from './domain/auth';
 import { DataProvider } from './commons/data';
 import { Auth } from './ui/Auth';
+import { BillingProvider } from './commons/billing';
+import { PublicPricing } from './ui/components/Pricing';
 import { App } from './ui/App';
 import './styles.css';
 
@@ -19,12 +21,13 @@ const appRoute = createRoute({ getParentRoute: () => rootRoute, path: '/$view', 
 const router = createRouter({ routeTree: rootRoute.addChildren([indexRoute, appRoute]) });
 
 function Root() {
-  const [auth, setAuth] = useState<AuthService>(), [identity, setIdentity] = useState<{ subject: string; email: string } | null>(), [error, setError] = useState('');
-  useEffect(() => { void loadConfig().then(async config => { const service = new AuthService(config); setAuth(service); setIdentity(await service.identity()); }).catch(e => setError((e as Error).message)); }, []);
+  const [auth, setAuth] = useState<AuthService>(), [identity, setIdentity] = useState<{ subject: string; email: string } | null>(), [error, setError] = useState(''), [authError, setAuthError] = useState('');
+  useEffect(() => { void loadConfig().then(async config => { const service = new AuthService(config); setAuth(service); if (location.pathname === '/auth/callback') { try { await service.finishSocialSignIn(location.href); } catch (e) { setAuthError((e as Error).message); } finally { history.replaceState(null, '', '/blocks'); } } setIdentity(await service.identity()); }).catch(e => setError((e as Error).message)); }, []);
   const onSignOut = useCallback(() => setIdentity(null), []);
   if (error) return <main className="loading" role="alert">{error}<button onClick={() => location.reload()}>Reload</button></main>;
   if (!auth || identity === undefined) return <main className="loading" role="status">Opening BloxPlox…</main>;
-  return <div id="bloxplox-v2">{identity ? <DataProvider key={identity.subject} auth={auth} identity={identity} onSignOut={onSignOut}><RouterProvider router={router}/></DataProvider> : <Auth auth={auth} onSignedIn={async () => setIdentity(await auth.identity())}/>}</div>;
+  if (!identity && location.pathname === '/pricing') return <PublicPricing/>;
+  return <div id="bloxplox-v2">{identity ? <BillingProvider key={identity.subject} auth={auth} subject={identity.subject}><DataProvider key={identity.subject} auth={auth} identity={identity} onSignOut={onSignOut}><RouterProvider router={router}/></DataProvider></BillingProvider> : <Auth auth={auth} initialError={authError} onSignedIn={async () => { if (new URLSearchParams(location.search).get('returnTo') === 'pricing') window.location.assign('/pricing'); else setIdentity(await auth.identity()); }}/>}</div>;
 }
 createRoot(document.getElementById('app')!).render(<ErrorBoundary><Root/></ErrorBoundary>);
 if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load', () => { void navigator.serviceWorker.register('/sw.js').catch(() => {}); });

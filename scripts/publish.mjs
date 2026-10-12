@@ -14,6 +14,7 @@ if (!process.env.BLOXPLOX_API_URL) {
   values = Object.fromEntries(result.Stacks[0].Outputs.map(o => [o.OutputKey, o.OutputValue]));
 }
 const config = {
+  authDomain: process.env.BLOXPLOX_AUTH_DOMAIN || values.AuthDomain || '', socialProviders: JSON.parse(process.env.BLOXPLOX_SOCIAL_PROVIDERS || values.SocialProviders || '[]'),
   region, apiUrl: process.env.BLOXPLOX_API_URL || values.ApiUrl, websocketUrl: process.env.BLOXPLOX_SOCKET_URL || values.WebSocketUrl,
   userPoolId: process.env.BLOXPLOX_POOL_ID || values.UserPoolId, userPoolClientId: process.env.BLOXPLOX_CLIENT_ID || values.UserPoolClientId, publicSignup: true,
 };

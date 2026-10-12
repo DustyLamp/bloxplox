@@ -47,3 +47,23 @@ The generated service worker caches the application shell and runtime configurat
 Pinned CDK versions (registry checked 2026-10-11): library 2.273.0 and CLI 2.1145.0. The different version numbers are intentional. RxDB schema version 0 stores an extensible record envelope; adding Things and optional block references preserves that envelope and all existing records. Changes to the storage envelope require RxDB migrations without resetting local storage.
 
 Open-app reminders are supported; closed-app push/email reminders are not scheduled. DynamoDB change-log retention is currently indefinite. Monitor table growth and notification dead letters before introducing retention or compaction.
+
+## Mobile and shared code
+
+Expo / React Native uses native screens and gestures. `packages/auth`, `packages/domain`, and `packages/sync` contain platform-neutral authentication, validated records, conflict resolution, scheduling, and replication. Browser RxDB uses Dexie. Native RxDB uses the free local-storage engine with a synchronous SQLite adapter; one native process owns each account-specific database. Serialized transactions roll back documents and indexes together and emit change events only after commit. Tests reopen hundreds of persisted records and simulate storage failure.
+
+The prerequisite canvas is shared React Flow code rendered by Expo DOM from bundled assets. It needs no hosted graph page or network connection. Native screens expose the same graph actions as accessible buttons and lists.
+
+Cognito authorization-code flows use PKCE, one-use state and a nonce, with token exchange at the configured Cognito HTTPS endpoint. The pre-signup trigger links trusted Google/Apple verified-email identities to one local profile. It refuses unverified or ambiguous matches. Its IAM policy is restricted to this account, region and tagged production BloxPlox pools, avoiding a CloudFormation dependency cycle between the pool and its trigger.
+
+## Calendar import
+
+Google OAuth refresh credentials stay in private server-owned DynamoDB items and are excluded from RxDB replication. The OAuth client secret is in Secrets Manager. Calendar-list and event scopes are read-only; user-facing hide and merge actions only write BloxPlox records. Clients cannot push imported sources/events.
+
+SQS serializes small import jobs with at most two worker invocations running concurrently. Google watch notifications use unpredictable channel secrets. A daily catch-up renews watches; app foreground, reconnect and a five-minute foreground timer request catch-up. There is no minute-by-minute scan of an empty table. The daily job queries a sparse integration index.
+
+Each import fetches every Google page for a bounded view window (31 days before through 184 days after the selected date), with recurring exceptions expanded by Google. Older imported history is retained. Only a complete successful snapshot can remove missing events. Long first imports enqueue continuations; already-applied records are skipped and partial imports never prune. Auth failures retain the offline copy and ask the user to reconnect.
+
+## Paid access remains disabled
+
+CDK sets `PAID_PLANS_ENABLED=false`; client release policy grants every feature regardless of cached billing state. No Stripe reads or habit admission limits run while disabled. Stripe integration code remains available for the later agreed launch, with server-owned prices, signed webhooks, idempotent checkout, and account-owned customer records.

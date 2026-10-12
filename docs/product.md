@@ -2,7 +2,7 @@
 
 ## Layout and visual language
 
-- Blocks is the schedule. Tracker is the recurring habit view. Things is the one-off task list. All three are directly accessible from the main screen.
+- Blocks is the schedule. Habits is the recurring habit view. Things is the one-off task list. All three are directly accessible from the main screen.
 - One global Grid/List setting controls all three views and remains selected when switching tabs and across restarts.
 - Chronological blocks occupy space proportional to their duration. Keep the screen filled with colour, small seams, and rounded outside corners.
 - Poppins, bold weights, ordinary sentence casing. No slogans, motivational copy, or explanatory filler.
@@ -31,9 +31,9 @@
 
 The card follows the finger and exposes the action underneath. Completion reveals green with a white check; not done reveals red with a white cross; clearing reveals grey with a broom. Use icons, not labels. The inner moving edge is square; the outside corners remain rounded. The white check/cross also has the sunken treatment. Further dragging reveals more of the action.
 
-## Tracker
+## Habits
 
-Preserve RealTracker's habit management structure: binary and numeric habits, a target and unit, active state, weekdays, reminder settings, direct numeric entry, result actions, skip/unskip, and statistics screens. Tracker cards retain the original mint/pink/blue-grey status colours. The latest requested typography is Poppins in normal case rather than RealTracker's uppercase Raleway.
+Preserve RealTracker's habit management structure: binary and numeric habits, a target and unit, active state, weekdays, reminder settings, direct numeric entry, result actions, skip/unskip, and statistics screens. Habits cards retain the original mint/pink/blue-grey status colours. The latest requested typography is Poppins in normal case rather than RealTracker's uppercase Raleway.
 
 ## Things
 
@@ -62,8 +62,26 @@ Preserve RealTracker's habit management structure: binary and numeric habits, a 
 - Specify start time, duration, category, and conflict handling (push following or next available).
 - A monthly date beyond the end of a month clamps to that month's last day.
 - Linked completion changes appear in both views. Moving an occurrence changes that occurrence; editing the recurrence is a separate action.
-- Tracker shows the scheduled time and recurrence indicator.
+- Habits shows the scheduled time and recurrence indicator.
 
 ## Backlog and reporting
 
 The intended backlog is ordered. Items can be assigned dates, added to today, or allowed to roll forward automatically. Production reporting should compute time spent per category over a selected period, including activities such as German over three months. The prototype includes these screens; see the handoff for which behaviours remain illustrative.
+
+## Prerequisites
+
+Things can have several prerequisites. The React Flow graph runs left to right, with direct and transitive prerequisites listed below the selected Thing. “Waiting on…” is informational: completing a dependent Thing is always allowed. Duplicate links and cycles are prevented locally; cycles produced by concurrent offline edits remain visible as conflicts that can be removed, without blocking synchronization. Deleted endpoints do not leave visible dangling links.
+
+## Calendars
+
+Google Calendar is an optional read-only import. A person can connect multiple Google accounts and select multiple calendars. Imported events never silently become completed blocks or add to the completion denominator. All-day events have their own row.
+
+Exact time windows containing clashes stack vertically in Grid and split horizontally in List. Hiding an event is a synchronized BloxPlox preference. Merging an event into a block combines its local time window, retains habits and Things, and suppresses the separate event card. Unmerging or deleting that block makes the imported event visible again. None of these operations writes to Google.
+
+“Schedule things separately” creates one block per selected Thing, using its estimate and the next available fifteen-minute slot. It removes those references from the original block after saving the destination blocks, retaining shared task completion. The original block keeps its duration.
+
+## Free preview and accounts
+
+All current features remain free for every user during the preview. Paid access is explicitly disabled on clients and the backend.
+
+Google and Apple sign-in link to an existing account only when both identities provide the same verified email. Social-first accounts receive a stable local profile so an email-based password reset can add manual sign-in later. Apple relay addresses are distinct email addresses and are never guessed to belong to another account.

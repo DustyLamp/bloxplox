@@ -39,7 +39,7 @@ export function History({ date, onDate, manage }: { date: string; onDate: (date:
       setRange(r => ({ from: shiftDate(r.from, remove), count: Math.min(151, r.count + 30) }));
     }
   }
-  return <div className="bp2-historywrap"><nav ref={nav} className="rt-history" aria-label="Combined Blocks and Tracker history" onScroll={extend}
+  return <div className="bp2-historywrap"><nav ref={nav} className="rt-history" aria-label="Combined Blocks and Habits history" onScroll={extend}
     onWheel={e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY; }}
     onPointerDown={e => { if (e.pointerType === 'mouse') dragging.current = { x: e.clientX, scroll: e.currentTarget.scrollLeft, moved: false }; }}
     onPointerMove={e => { const drag = dragging.current; if (!drag || Math.abs(e.clientX - drag.x) < 5 && !drag.moved) return; drag.moved = true; suppressClick.current = true; e.currentTarget.setPointerCapture(e.pointerId); e.currentTarget.scrollLeft = drag.scroll - (e.clientX - drag.x); }}

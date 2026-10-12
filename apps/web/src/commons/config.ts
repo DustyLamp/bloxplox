@@ -1,4 +1,5 @@
-export interface RuntimeConfig { region: string; userPoolId: string; userPoolClientId: string; apiUrl: string; websocketUrl: string; publicSignup: boolean }
+import type { RuntimeConfig } from '../../../../packages/auth/src/index';
+export type { RuntimeConfig } from '../../../../packages/auth/src/index';
 export async function loadConfig(): Promise<RuntimeConfig> {
   if (import.meta.env.DEV && import.meta.env.VITE_LOCAL_TEST === 'true') {
     return { region: 'local', userPoolId: 'local', userPoolClientId: 'local', apiUrl: '', websocketUrl: '', publicSignup: true };

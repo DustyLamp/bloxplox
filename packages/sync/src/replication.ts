@@ -3,12 +3,13 @@ import { replicateRxCollection } from 'rxdb/plugins/replication';
 import type { RxReplicationPullStreamItem } from 'rxdb';
 import type { Document } from '../../domain/src/index';
 import { wireDocument, type Database } from './database';
+import { browserRuntime, type SyncRuntime } from './runtime';
 
 export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'retrying' | 'sign-in';
 export interface SyncConfig { apiUrl: string; websocketUrl: string; token: (force?: boolean) => Promise<string>; subject: string }
 type Checkpoint = { sequence: number };
 
-export function startSync(db: Database, config: SyncConfig, onStatus: (status: SyncStatus) => void) {
+export function startSync(db: Database, config: SyncConfig, onStatus: (status: SyncStatus) => void, runtime: SyncRuntime = browserRuntime()) {
   let closed = false, socket: WebSocket | undefined, reconnectTimer: ReturnType<typeof setTimeout> | undefined;
   let attempts = 0, lastPong = Date.now(), refreshing: Promise<string> | undefined, healthy = false, authFailed = false, connecting = false;
   const lifetime = new AbortController();
@@ -21,16 +22,23 @@ export function startSync(db: Database, config: SyncConfig, onStatus: (status: S
           refreshing ??= config.token(true).finally(() => { refreshing = undefined; });
           token = await refreshing;
         } else token = await config.token();
-      } catch (error) { authFailed = navigator.onLine; if (!closed) onStatus(authFailed ? 'sign-in' : 'offline'); throw error; }
-      const response = await fetch(`${config.apiUrl}${path}`, {
-        method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-        body: data ? JSON.stringify(data) : undefined, signal: AbortSignal.any([lifetime.signal, AbortSignal.timeout(20000)]), cache: 'no-store',
-      });
+      } catch (error) { authFailed = runtime.isOnline(); if (!closed) onStatus(authFailed ? 'sign-in' : 'offline'); throw error; }
+      const requestLifetime = new AbortController(), abort = () => requestLifetime.abort();
+      if (lifetime.signal.aborted) abort();
+      lifetime.signal.addEventListener('abort', abort, { once: true });
+      const timeout = setTimeout(abort, 20000);
+      let response: Response;
+      try {
+        response = await fetch(`${config.apiUrl}${path}`, {
+          method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: data ? JSON.stringify(data) : undefined, signal: requestLifetime.signal, cache: 'no-store',
+        });
       if (response.status === 401 && attempt === 0) continue;
       if (!response.ok) { if (response.status === 401) authFailed = true; throw new Error(`Sync request failed (${response.status})`); }
       authFailed = false;
       if (path !== '/sync/ticket') healthy = true;
-      return response.json();
+      return await response.json();
+      } finally { clearTimeout(timeout); lifetime.signal.removeEventListener('abort', abort); }
     }
     throw new Error('Sign in again');
   }
@@ -51,21 +59,21 @@ export function startSync(db: Database, config: SyncConfig, onStatus: (status: S
   });
   const subscriptions = [
     replication.active$.subscribe(active => {
-      if (!navigator.onLine) return onStatus('offline');
+      if (!runtime.isOnline()) return onStatus('offline');
       if (active) onStatus('syncing');
       else if (healthy) onStatus('synced');
     }),
-    replication.error$.subscribe(() => { healthy = false; if (!closed) onStatus(!navigator.onLine ? 'offline' : authFailed ? 'sign-in' : 'retrying'); }),
+    replication.error$.subscribe(() => { healthy = false; if (!closed) onStatus(!runtime.isOnline() ? 'offline' : authFailed ? 'sign-in' : 'retrying'); }),
   ];
-  replication.awaitInitialReplication().then(() => { healthy = true; if (!closed) onStatus(navigator.onLine ? 'synced' : 'offline'); }).catch(() => {});
+  replication.awaitInitialReplication().then(() => { healthy = true; if (!closed) onStatus(runtime.isOnline() ? 'synced' : 'offline'); }).catch(() => {});
 
-  const resync = () => { if (!closed && navigator.onLine) replication.reSync(); };
+  const resync = () => { if (!closed && runtime.isOnline()) replication.reSync(); };
   const reconnect = () => {
-    if (closed || reconnectTimer || !navigator.onLine) return;
+    if (closed || reconnectTimer || !runtime.isOnline()) return;
     reconnectTimer = setTimeout(() => { reconnectTimer = undefined; void connect(); }, Math.min(30000, 500 * 2 ** Math.min(attempts++, 6)) + Math.random() * 300);
   };
   async function connect() {
-    if (closed || !navigator.onLine || connecting || socket) return;
+    if (closed || !runtime.isOnline() || connecting || socket) return;
     connecting = true;
     clearTimeout(reconnectTimer); reconnectTimer = undefined;
     try {
@@ -90,13 +98,12 @@ export function startSync(db: Database, config: SyncConfig, onStatus: (status: S
   const fallback = setInterval(resync, 60000);
   const online = () => { resync(); if (!socket) void connect(); };
   const offline = () => { healthy = false; onStatus('offline'); socket?.close(); };
-  const focus = () => { if (document.visibilityState === 'visible') online(); };
-  window.addEventListener('online', online); window.addEventListener('offline', offline); document.addEventListener('visibilitychange', focus);
+  const unsubscribeRuntime = runtime.subscribe(online, offline);
   void connect();
-  onStatus(navigator.onLine ? 'syncing' : 'offline');
+  onStatus(runtime.isOnline() ? 'syncing' : 'offline');
   return { replication, resync, async close() {
     closed = true; lifetime.abort(); clearInterval(heartbeat); clearInterval(fallback); clearTimeout(reconnectTimer);
-    window.removeEventListener('online', online); window.removeEventListener('offline', offline); document.removeEventListener('visibilitychange', focus);
+    unsubscribeRuntime();
     socket?.close(); subscriptions.forEach(s => s.unsubscribe()); stream.complete(); await replication.cancel();
   } };
 }

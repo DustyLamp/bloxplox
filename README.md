@@ -1,6 +1,6 @@
 # BloxPlox
 
-Daily Blocks, recurring habits in Tracker, and one-off tasks in Things. Plan sessions containing several Things, with shared task completion wherever they appear. The React application lives in `apps/web`; the approved design remains runnable in `apps/prototype`.
+Daily Blocks, recurring habits in Habits, and one-off tasks in Things. Plan sessions containing several Things, with shared task completion wherever they appear. The React application lives in `apps/web`; the approved design remains runnable in `apps/prototype`.
 
 ## Development
 
@@ -29,9 +29,11 @@ yarn synth
 
 | Path | Purpose |
 | --- | --- |
-| `apps/web` | React UI, authentication and application actions |
+| `apps/web` | React browser application |
+| `apps/mobile` | Expo / React Native iOS and Android application |
+| `packages/auth`, `packages/graph`, `packages/ui` | Shared authentication, React Flow canvas and live form behaviour |
 | `packages/domain` | Validated records, calendar rules, schedule and conflict resolution |
-| `packages/sync` | RxDB/Dexie persistence and authenticated replication |
+| `packages/sync` | RxDB with browser IndexedDB or native SQLite, shared authenticated replication |
 | `services/functions` | HTTP synchronization, WebSocket sessions and Streams notifications |
 | `infrastructure` | TypeScript CDK application, hosting and deployment pipeline |
 | `tests/production` | Production application browser checks |
@@ -52,3 +54,17 @@ AWS_PROFILE=bloxplox yarn cdk deploy BloxPloxPipeline --require-approval never
 See [architecture](docs/architecture.md), [product behaviour](docs/product.md), and the [implementation and verification log](docs/implementation.md). [Handoff notes](docs/handoff.md) distinguish the retained prototype from the production source.
 
 Poppins and Lucide assets are bundled locally; see [third-party notices](licenses/README.md). No application source license has been selected.
+
+## Current preview policy
+
+All features are free for every account. There is no paywall, checkout or five-habit limit during the preview. `paidPlansEnabled` in the shared domain and `PAID_PLANS_ENABLED=false` in CDK make this explicit. The proposed USD $4/month and $30/year plans are implemented behind this release policy; creating a Stripe secret alone cannot activate them.
+
+## Native development
+
+```sh
+yarn workspace @bloxplox/mobile start --max-workers 2
+yarn typecheck:mobile
+yarn workspace @bloxplox/mobile export --max-workers 2
+```
+
+The native app uses the same records, recurrence, completion, prerequisites, schedule actions, authentication and replication as the browser app. Credentials use SecureStore; account-specific RxDB data uses transactional SQLite. The React Flow graph runs in a bundled offline DOM component, alongside native prerequisite controls. Native social sign-in uses the system browser and the `bloxplox://auth` callback; it requires an installed build with the app's URL scheme, rather than Expo Go.

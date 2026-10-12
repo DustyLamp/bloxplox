@@ -1,0 +1,11 @@
+import { useRef, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { completionStats, formatDate, shiftDate } from '../../../packages/domain/src/index';
+import { useData } from './session';
+import { s } from './ui';
+export function History({ date, change }: { date: string; change(date: string): void }) {
+  const { docs } = useData(), [anchor] = useState(date), [before, setBefore] = useState(30), [after, setAfter] = useState(30), scroll = useRef<ScrollView>(null), first = useRef(true), prepend = useRef(false);
+  return <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator={false} accessibilityLabel="Combined Blocks and Habits history" style={{ backgroundColor: '#dce3e2', flexGrow: 0, flexShrink: 0, height: 78 }} onContentSizeChange={() => { if (first.current) { first.current = false; scroll.current?.scrollTo({ x: before * 42 - 140, animated: false }); } else if (prepend.current) { prepend.current = false; scroll.current?.scrollTo({ x: 30 * 42, animated: false }); } }} onMomentumScrollEnd={event => { const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent; if (contentOffset.x < 40) { prepend.current = true; setBefore(n => n + 30); } if (contentOffset.x + layoutMeasurement.width > contentSize.width - 40) setAfter(n => n + 30); }}>
+    {Array.from({ length: before + after + 1 }, (_, i) => shiftDate(anchor, i - before)).map(day => { const stats = completionStats(docs, day); return <Pressable key={day} accessibilityRole="button" accessibilityLabel={`${formatDate(day)}: ${stats.done} of ${stats.total} done`} accessibilityState={{ selected: date === day }} onPress={() => change(day)} style={{ width: 42, height: 78, paddingHorizontal: 2, paddingTop: 5, borderWidth: 2, borderColor: date === day ? '#fff' : 'transparent', borderTopLeftRadius: 7, borderTopRightRadius: 7 }}><View style={{ height: 46, justifyContent: 'flex-end' }}><View style={{ height: stats.total ? Math.max(2, stats.done / stats.total * 44) : 2, backgroundColor: '#57b893', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}/></View><Text style={[s.small, { textAlign: 'center', marginTop: 4, fontSize: 10 }]}>{day.slice(8)}</Text></Pressable>; })}
+  </ScrollView>;
+}
