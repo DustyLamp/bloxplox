@@ -192,15 +192,17 @@ recovery and reminders still need verification before claiming readiness for
 public App Store review. Do not use the owner's real account for destructive deletion QA.
 
 
-## Mobile design follow-up
+## Mobile spacing follow-up
 
-The native layout now follows the compact approved Blocks design and RealTracker
-habit lists: separated result tap targets, numeric target descriptions, full-width
-status colours, shared history and a single Grid/List setting. Things supports
-compact prerequisites and selection before scheduling. See implementation.md for
-simulator test evidence and remaining physical-device checks.
+The original native interface is retained. The only visual adjustment is to
+Habits List rows: lower minimum height, tighter text spacing and the existing
+status marker on the right. A broader design pass was reverted following the
+owner's clarification and was not distributed in a signed beta. Grid, Blocks,
+Things, history, navigation, colours and interactions retain their prior design.
+See implementation.md for verification evidence and device checks still pending.
 
-Xube Play signup is paused at the D-U-N-S identity form, awaiting the owner's
-business identifier and public contact details. Two-step verification is enabled
-on the approved Google account. No registration payment has been made and the
-unrelated Mylk Me payments profile has not been selected.
+Xube Play signup is at the D-U-N-S identity form; the owner requested lookup of
+the existing registration number. Two-step verification is enabled on the
+approved Google account. Public developer contact details remain to be confirmed.
+No registration payment has been made and the unrelated Mylk Me payments profile
+has not been selected.

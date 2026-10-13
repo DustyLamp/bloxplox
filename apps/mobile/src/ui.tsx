@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path, Rect } from 'react-native-svg';
-export const colors = { bg: '#fafaf8', ink: '#28242e', muted: '#716b7b', purple: '#b48aff', green: '#55e0a0', red: '#ff8999', grey: '#505560', light: '#fafaff' };
+import Svg, { Rect } from 'react-native-svg';
+export const colors = { bg: '#f4f3f5', ink: '#28242e', muted: '#716b7b', purple: '#b48aff', green: '#bfe7d5', red: '#f2c9d3', grey: '#dde1e7' };
 export const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg }, content: { padding: 16, gap: 12, paddingBottom: 40 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }, spread: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
@@ -24,7 +24,3 @@ export function ErrorText({ message }: { message: string }) { return message ? <
 export function Loading({ text = 'Opening BloxPlox…' }: { text?: string }) { return <View style={[s.screen, { alignItems: 'center', justifyContent: 'center', gap: 15 }]}><ActivityIndicator color="#8762ba"/><Txt>{text}</Txt></View>; }
 export function confirmDelete(name: string, action: () => void) { Alert.alert(`Delete ${name}?`, 'This change will synchronize to your devices.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: action }]); }
 export function Logo() { return <Svg width={36} height={36} viewBox="0 0 64 64" accessibilityLabel="BloxPlox"><Rect x={4} y={4} width={25} height={36} rx={8} fill="#b48aff"/><Rect x={33} y={4} width={27} height={19} rx={7} fill="#70b4ff"/><Rect x={33} y={27} width={27} height={33} rx={8} fill="#c5ef51"/><Rect x={4} y={44} width={25} height={16} rx={7} fill="#ff9b57"/></Svg>; }
-export function Icon({ name, size = 20, color = colors.ink }: { name: 'check' | 'cross' | 'minus' | 'plus' | 'left' | 'right' | 'down' | 'menu' | 'grid' | 'list' | 'graph'; size?: number; color?: string }) {
-  const paths = { check: 'm5 12 4 4L19 6', cross: 'm6 6 12 12M6 18 18 6', minus: 'M5 12h14', plus: 'M12 5v14M5 12h14', left: 'm14 6-6 6 6 6', right: 'm10 6 6 6-6 6', down: 'm6 9 6 6 6-6', menu: 'M5 6h14M5 12h14M5 18h14', grid: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z', list: 'M8 5h13M8 12h13M8 19h13M3 5h.1M3 12h.1M3 19h.1', graph: 'M3 4h5v5H3zM16 15h5v5h-5zM8 6.5h4v11h4' };
-  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" accessible={false}><Path d={paths[name]}/></Svg>;
-}
