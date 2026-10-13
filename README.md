@@ -83,3 +83,7 @@ uses private signing material from the `native-beta` GitHub environment. See the
 [native release guide](docs/mobile-release.md) for signing, distribution, account
 deletion and cost controls. Web and native Settings include permanent account
 deletion; the public web path is https://bloxplox.com/delete-account.
+
+`yarn test:live` and `yarn test:live:deletion` verify the deployed service using
+new disposable accounts, then remove their data. These are explicit operator
+checks, not part of pull-request CI.

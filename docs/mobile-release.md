@@ -23,6 +23,10 @@ keys are removed from the runner before artifact upload. Build codes start at
 workflow. Debug-signed preview APKs must be uninstalled before the first signed
 beta. Export/sync any preview data first.
 
+The release manifest excludes overlay, shared-storage and install-referrer
+permissions brought in by development dependencies. The workflow checks the
+packaged APK and includes `permissions.txt` with the artifacts.
+
 The APK is for direct installation. The AAB is for Google Play after account
 verification, app setup and Play App Signing enrollment. Google Play may sign
 distributed APKs with a different app-signing key: direct-install testers might
@@ -50,7 +54,10 @@ DynamoDB marker. Every replicated write checks this marker in its transaction,
 including writes racing deletion. Calendar callbacks and queued imports also
 check the marker. Connected clients that receive HTTP 410 erase their account's
 local database; the requesting device erases it immediately. Other offline
-devices may retain their cache until cleared or uninstalled.
+devices erase cached records on reconnect while their access token is valid.
+Devices returning after their credentials expire may retain a local
+cache until browser/app storage is cleared or the app is uninstalled. RxDB's
+browser adapter retains empty IndexedDB containers after removing the records.
 
 The marker is an outbox: DynamoDB Streams sends a delayed SQS cleanup job. The
 three-minute delay outlasts in-flight API/calendar executions. Cleanup revokes
@@ -67,6 +74,12 @@ Restore procedures must reapply these receipts before serving a restored table.
 PITR backups expire within 35 days. Paid plans remain disabled; before enabling
 subscriptions, extend deletion to cancel/reconcile billing and disclose any
 legally required retention. Apple token revocation must be added with Apple login.
+
+Run `yarn test:live:deletion` with the deployment profile to exercise this flow
+using two disposable accounts. It checks two tabs, an independently cached
+offline browser on reconnect, local records and replication metadata, API access
+denial, server cleanup and isolation of the second account. Allow several minutes
+for the delayed worker. Never substitute a real user's credentials or subject.
 
 ## Cost controls
 

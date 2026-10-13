@@ -53,6 +53,12 @@ jobs:
           SIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
           "$SIGNER" verify --print-certs beta/BloxPlox-android.apk > beta/signature.txt
           if grep -q 'CN=Android Debug' beta/signature.txt; then exit 1; fi
+          ANALYZER=$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/apkanalyzer' | sort -V | tail -1)
+          "$ANALYZER" manifest permissions beta/BloxPlox-android.apk > beta/permissions.txt
+          if grep -Eq 'permission\.(SYSTEM_ALERT_WINDOW|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|BIND_GET_INSTALL_REFERRER_SERVICE)$' beta/permissions.txt; then
+            echo 'The APK includes an unused blocked permission.' >&2
+            exit 1
+          fi
           sha256sum beta/*.apk beta/*.aab > beta/SHA256SUMS
           printf 'Source: %s\nVersion code: %s\n' "$GITHUB_SHA" "$BLOXPLOX_BUILD_NUMBER" > beta/build.txt
       - uses: actions/upload-artifact@v4
