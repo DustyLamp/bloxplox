@@ -8,6 +8,13 @@
 - Public signup with verified email.
 - A self-updating CDK CodePipeline deploys `main`; no separate manual production gate.
 
+Current delivery status (13 October 2026): web/backend revision `96ccb37` is live,
+Google login is verified and Apple login is deployed awaiting a real provider
+login. iOS build 1002 is in the invited internal TestFlight group; signed Android
+build 1003 is a GitHub prerelease. Public App Store/Play release, physical-device
+QA and Google's Calendar scope review remain outstanding. Earlier dated entries
+below describe the state at those checkpoints.
+
 ## Reference patterns, expressed independently
 
 Use React, TypeScript, Vite, TanStack Router, Tailwind, Lucide, schema validation,
@@ -198,8 +205,9 @@ Both have private backups; CI signing values are in the main-only native-beta
 environment, and the Apple login key is in BloxPlox's Secrets Manager.
 PR #15 merged the manually dispatched signed-iOS workflow. Run `38410573312`
 successfully compiled, signed, validated and uploaded iOS 0.1.0 (1001) from
-`44b5fdb`. App Store Connect confirms receipt and processing. No invitations or
-public review submission have been sent. Existing Xube app credentials remain
+`44b5fdb`. App Store Connect finished processing it, and the owner-authorized
+internal TestFlight invitation was sent. No public review submission has been
+sent. Existing Xube app credentials remain
 unchanged. Backend/web deployment remains AWS CodePipeline; its main44b5fdb
 execution succeeded.
 
@@ -210,6 +218,26 @@ return address. Unit coverage is now 81 tests. Web/native type checks, productio
 web build, iOS/Android bundle exports and CDK synthesis pass. The browser suite
 passed 53 checks with one intentional mobile keyboard-only skip using installed
 Chrome; the removed Playwright browser cache was not re-downloaded. Apple
-registered Cognito’s default email source with a passing SPF status. Live
-verification and final beta build remain
-pending; see mobile-release.md for the exact setup and limits.
+registered Cognito’s default email source with a passing SPF status.
+
+PR #16 merged as `96ccb37`. CodePipeline execution
+`35c2cb17-1be0-4dd2-bd74-bdc44eafeefa` succeeded through backend deployment and
+Amplify publication. Production configuration advertises both Google and Apple;
+the Apple button reaches the correct Apple authorization screen. Actual Apple
+login is waiting for the owner's authentication, so provider token exchange,
+private relay delivery and upstream revocation are not claimed as verified.
+
+The expanded production deletion suite passed six check groups: Apple preparation
+and single-use cancellation bound to a disposable account's synthetic provider
+subject/nonce, untrusted return rejection, two-tab local purge, offline-device
+purge on reconnect, API denial with account isolation, delayed Streams/SQS server
+cleanup and no browser runtime errors. Both temporary users and their records
+were removed. The synthetic provider test does not prove real Apple consent.
+
+iOS workflow `38414994767` signed, validated and uploaded build 1002 from `96ccb37`.
+Apple finished processing and it was added to the existing internal beta group.
+Android workflow `38414998396` produced signed build 1003; the downloaded artifacts
+match CI checksums. An upgrade installation and cold launch on the API 34 arm64
+emulator passed without runtime errors. The signed APK/AAB are retained in the
+GitHub prerelease. Native social login, gestures, offline recovery and reminders
+still need physical-device verification; see mobile-release.md for setup and limits.

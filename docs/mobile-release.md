@@ -37,7 +37,8 @@ until the release is uploaded and available to the intended testing track.
 
 The existing **Build native previews** workflow produces a signed simulator app
 on the public macOS runner. A simulator app cannot be installed on an iPhone.
-The selected Xube team and BloxPlox app record are documented below. A first signed iPhone build has been uploaded to TestFlight; Apple processing and device verification are tracked below. Never
+The selected Xube team and BloxPlox app record are documented below. Signed iPhone
+builds 1001 and 1002 are available to the invited internal TestFlight tester. Never
 reuse another product's private signing keys or credentials without authorization.
 Complete native authentication, gestures, offline recovery and physical-device
 checks before inviting external testers. Sign in with Apple and its revocation
@@ -77,7 +78,12 @@ legally required retention. Apple token revocation is part of the Apple login re
 Run `yarn test:live:deletion` with the deployment profile to exercise this flow
 using two disposable accounts. It checks two tabs, an independently cached
 offline browser on reconnect, local records and replication metadata, API access
-denial, server cleanup and isolation of the second account. Allow several minutes
+denial, server cleanup and isolation of the second account. With Apple enabled,
+it also links a synthetic Apple identity only to the disposable account, verifies
+server-side ownership/nonce binding, rejects an untrusted return URL, and checks
+single-use cancellation without deleting the account. It removes that synthetic
+link before testing deletion. This does not verify real Apple consent, token
+exchange or upstream revocation. Allow several minutes
 for the delayed worker. Never substitute a real user's credentials or subject.
 
 ## Cost controls
@@ -128,8 +134,19 @@ The approved distribution certificate and BloxPlox App Store profile expire on
 13 October 2027. The BloxPlox-only Apple sign-in key is stored in AWS Secrets
 Manager as `bloxplox/apple-signin`; no private credentials are in this repository.
 Workflow run `38410573312` on revision `44b5fdb` successfully signed, validated and
-uploaded version 0.1.0 (1001). App Store Connect showed Processing on 13 October.
-This establishes signing/upload; it is not a public release or physical-device QA.
+uploaded version 0.1.0 (1001). Run `38414994767` uploaded build 1002 from `96ccb37`,
+including Apple login and deletion confirmation. Apple finished processing both;
+they are assigned to the **BloxPlox beta** internal group. The owner authorized
+the tester invitation and it was sent. Automatic build distribution stays off.
+The private review contact is saved only in App Store Connect. External beta
+review and public App Store submission have not been requested. This establishes
+signing, upload and internal distribution; it does not establish physical-device QA.
+
+Android run `38414998396` produced signed build 1003 from the same revision. The
+downloaded APK/AAB checksums match CI; upgrade installation and cold launch passed
+on the API 34 arm64 emulator without React Native or Android runtime errors.
+The [GitHub prerelease](https://github.com/DustyLamp/bloxplox/releases/tag/android-beta-0.1.0-1003)
+retains the artifacts. Google Play developer-account verification remains pending.
 
 ## Apple sign-in and deletion
 
@@ -163,5 +180,9 @@ account-deletion page retains those instructions. See
 
 Cognito’s default `no-reply@verificationemail.com` sender is registered in
 Apple’s private-relay email sources and passed its SPF check. This adds no
-mailbox subscription. Live Apple sign-in, private-relay mail delivery and token revocation still need
-verification before claiming the Apple flow is ready for public App Store review.
+mailbox subscription. CodePipeline execution
+`35c2cb17-1be0-4dd2-bd74-bdc44eafeefa` deployed revision `96ccb37` successfully;
+the production runtime advertises Google and Apple and the Apple button reaches
+the registered Apple authorization screen. The owner must complete that login.
+Live Apple sign-in, private-relay mail delivery and upstream token revocation
+still need verification before claiming readiness for public App Store review.
