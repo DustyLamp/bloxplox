@@ -25,7 +25,7 @@ export function ThingPicker({ selected, onChange }: { selected: string[]; onChan
   async function create() {
     if (!search.trim() || busy) return;
     setBusy(true); setError('');
-    try { const { id, ...data } = newThing(search.trim()); await save(id, 'thing', data); onChange([...selected, id]); setSearch(''); }
+    try { const { id, ...data } = newThing(search.trim()); await save(id, 'thing', data); onChange([...selected, id]); setSearch(current => current === search ? '' : current); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
   return <section className="thing-picker" aria-label="Things in this block"><h3>Things <span>{chosen.filter(t => t.completedOn).length} / {chosen.length}</span></h3>

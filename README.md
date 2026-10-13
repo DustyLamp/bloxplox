@@ -46,8 +46,9 @@ Live at **https://bloxplox.com**, account `807550663091`, region `eu-north-1`, l
 Email, Google and Apple login are verified live on the web. Matching verified
 Google and Apple emails were confirmed to use the existing account and planner.
 Physical-device checks remain part of native beta verification.
-iOS build 1002 is available to the invited internal TestFlight tester. Android
-build 1003 is available as a [signed beta download](https://github.com/DustyLamp/bloxplox/releases/tag/android-beta-0.1.0-1003).
+iOS build 1004 is available to the invited internal TestFlight tester. Android
+build 1005 is available as a [signed beta download](https://github.com/DustyLamp/bloxplox/releases/tag/android-beta-0.1.0-1005).
+The original native design is retained, with tighter Habits List spacing.
 Neither app has been released publicly through the App Store or Google Play.
 
 The `bloxplox-production` CodePipeline watches `main`, tests the application, synthesizes and updates itself, deploys the backend, then publishes a matching build and runtime configuration to Amplify. Merge to `main` to deploy. No manual pipeline approval is required.

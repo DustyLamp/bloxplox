@@ -36,7 +36,14 @@ test('calendar clashes stack in Grid, split in List, hide across reloads and mer
 test('Things assigned to one block can be scheduled separately without losing completion', async ({page}) => {
   await page.goto('/blocks'); await page.getByRole('button',{name:'Add a block',exact:true}).click(); await page.getByLabel('Name',{exact:true}).fill('Admin session');
   await page.getByText('Add things',{exact:true}).click();
-  for (const name of ['Pay bill', 'Renew permit']) { await page.getByLabel('Find or add a thing').fill(name); await page.getByRole('button',{name:`Create “${name}”`,exact:true}).click(); }
+  const input = page.getByLabel('Find or add a thing');
+  await input.fill('Pay bill'); await page.getByRole('button',{name:'Create “Pay bill”',exact:true}).click();
+  // Typing the next name may overlap the preceding asynchronous save.
+  await input.fill('Renew permit');
+  await expect(page.getByRole('checkbox',{name:'Complete Pay bill',exact:true})).toBeVisible();
+  await expect(input).toHaveValue('Renew permit');
+  await page.getByRole('button',{name:'Create “Renew permit”',exact:true}).click();
+  await expect(page.getByRole('checkbox',{name:'Complete Renew permit',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Save',exact:true}).click(); await page.getByRole('button',{name:'08:00 Admin session 30m',exact:true}).click();
   await page.getByRole('checkbox',{name:'Complete Pay bill',exact:true}).check();
   await page.getByRole('button',{name:'Schedule things separately',exact:true}).click();
