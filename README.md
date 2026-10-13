@@ -77,3 +77,9 @@ gh workflow run native.yml --ref main -f platform=both
 ```
 
 Use `android` or `ios` to build only one platform. The workflow produces an Android APK with development signing and a Release iOS simulator application; artifacts expire after one day. Physical iPhone/TestFlight builds require the Apple Developer team and signing setup. Google and Apple buttons appear only when their provider configuration is active.
+
+The separate **Build signed Android beta** workflow runs manually on `main` and
+uses private signing material from the `native-beta` GitHub environment. See the
+[native release guide](docs/mobile-release.md) for signing, distribution, account
+deletion and cost controls. Web and native Settings include permanent account
+deletion; the public web path is https://bloxplox.com/delete-account.

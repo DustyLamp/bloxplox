@@ -4,6 +4,7 @@ import type { APIGatewayProxyEventV2 } from 'aws-lambda';
 import { z } from 'zod';
 import { dateSchema, type CalendarSource } from '../../packages/domain/src/index';
 import { authenticate } from './auth';
+import { assertAccountActive } from './account-state';
 import { ddb } from './store';
 import { exchangeGoogle, googleConfig, googleFetch, googleScopes } from './google-config';
 import { enqueueCalendar, googleToken, item, items, pk, removeSource, saveImported, stableId, table, type GoogleAccount, type GoogleSource } from './google-store';
@@ -50,6 +51,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
       if (!state || !/^[A-Za-z0-9_-]{43}$/.test(state)) return json(400, { error: 'Invalid calendar connection' });
       const record = (await ddb.send(new DeleteCommand({ TableName: table(), Key: { pk: `GOOGLESTATE#${createHash('sha256').update(state).digest('hex')}`, sk: 'STATE' }, ConditionExpression: 'expires > :now', ExpressionAttributeValues: { ':now': Math.floor(Date.now() / 1000) }, ReturnValues: 'ALL_OLD' }))).Attributes;
       if (!record) return json(400, { error: 'Calendar connection expired' });
+      await assertAccountActive(record.owner);
       callbackPlatform = record.platform;
       if (event.queryStringParameters?.error) return redirect(callbackPlatform, 'calendar=cancelled');
       const code = event.queryStringParameters?.code, config = await googleConfig();
@@ -108,6 +110,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
     return json(404, { error: 'Not found' });
   } catch (error) {
     if (event.rawPath === '/calendars/google/callback') return redirect(callbackPlatform, 'calendar=failed');
+    if ((error as Error).name === 'AccountDeleted') return json(410, { error: 'This account has been deleted.' });
     if ((error as Error).message === 'Unauthorized') return json(401, { error: 'Sign in again' });
     if (error instanceof z.ZodError || error instanceof SyntaxError) return json(400, { error: 'Invalid calendar request' });
     console.error('google_calendar_request_failed', { requestId: event.requestContext.requestId, name: (error as Error).name });

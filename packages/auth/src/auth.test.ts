@@ -35,3 +35,24 @@ it('opens only the current cached account offline without waiting on token refre
   expect(await auth.identity()).toEqual({subject:'stable-sub',email:'demo@example.com'}); expect(session).not.toHaveBeenCalled();
   auth.signOut(); expect(await auth.identity()).toBeNull();
 });
+it('does not show a previous account cache after an interrupted account switch', async () => {
+  const flow = await start(); vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => tokens(flow.pending.nonce) })));
+  await auth.finishSocialSignIn(`https://bloxplox.com/auth/callback?code=x&state=${flow.state}`);
+  await auth.identity();
+  store.set('CognitoIdentityServiceProvider.client.local-user.idToken', jwt({ sub: 'different-sub' }));
+  auth.runtime.isOnline = () => false;
+  vi.spyOn(auth, 'session').mockRejectedValue(new Error('Network unavailable'));
+  expect(await auth.identity()).toBeNull();
+});
+it('uses native callbacks, cleans up cancellation and replaces abandoned PKCE attempts', async () => {
+  const first = await start();
+  const url = new URL(await auth.socialSignIn('Google', 'bloxplox://auth'));
+  expect(store.has(`bloxplox-oauth:${first.state}`)).toBe(false);
+  const state = url.searchParams.get('state')!, pending = JSON.parse(store.get(`bloxplox-oauth:${state}`)!);
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => tokens(pending.nonce) })));
+  await auth.finishSocialSignIn(`bloxplox://auth?code=native-code&state=${state}`);
+  expect(await auth.identity()).toEqual({ subject: 'stable-sub', email: 'demo@example.com' });
+  const cancelled = await auth.socialSignIn('Google', 'bloxplox://auth');
+  auth.cancelSocialSignIn(cancelled);
+  expect([...store.keys()].filter(key => key.startsWith('bloxplox-oauth'))).toEqual([]);
+});

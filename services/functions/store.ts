@@ -2,6 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, QueryCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { sameContent, type Document } from '../../packages/domain/src/index';
 import { enforceHabitLimit } from './plan-policy';
+import { assertAccountActive, deletionKey } from './account-state';
 
 export interface Checkpoint { sequence: number }
 export interface PushRow { newDocumentState: Document; assumedMasterState?: Document | null }
@@ -17,6 +18,7 @@ export async function getDocument(owner: string, id: string): Promise<Document |
 export async function pushDocument(owner: string, row: PushRow): Promise<Document | null> {
   const pk = ownerKey(owner), proposed = row.newDocumentState;
   for (let attempt = 0; attempt < 12; attempt++) {
+    await assertAccountActive(owner);
     const current = await getDocument(owner, proposed.id);
     if (current && sameContent(current, proposed)) return null;
     if (current && (current.kind !== proposed.kind || current.revision !== row.assumedMasterState?.revision)) return current;
@@ -28,6 +30,7 @@ export async function pushDocument(owner: string, row: PushRow): Promise<Documen
     const incoming = await enforceHabitLimit(owner, proposed, current);
     try {
       await ddb.send(new TransactWriteCommand({ TransactItems: [
+        { ConditionCheck: { TableName: table(), Key: deletionKey(owner), ConditionExpression: 'attribute_not_exists(pk)' } },
         { Put: { TableName: table(), Item: { pk, sk: 'SEQUENCE', sequence },
           ConditionExpression: meta ? '#seq = :previous' : 'attribute_not_exists(pk)',
           ...(meta ? { ExpressionAttributeNames: { '#seq': 'sequence' }, ExpressionAttributeValues: { ':previous': previous } } : {}) } },

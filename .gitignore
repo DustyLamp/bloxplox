@@ -20,6 +20,11 @@ apps/mobile/android/
 *.ipa
 *.apk
 *.aab
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+credentials.json
 
 build-ios/
 *.tar.gz

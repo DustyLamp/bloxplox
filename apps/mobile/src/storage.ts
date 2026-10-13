@@ -28,6 +28,7 @@ export async function openNativeDatabase(account: string) {
   const storage = sqliteStorage({ exec: text => sql.execSync(text), run: (text, ...params) => { sql.runSync(text, ...params); }, first: (text, ...params) => sql.getFirstSync(text, ...params) });
   try {
     const db = await createDatabase(`bloxplox-${hash}`, storage);
-    return { db, async close() { await db.close(); sql.closeSync(); } };
+    let closed = false;
+    return { db, async close() { if (closed) return; closed = true; await db.close(); sql.closeSync(); }, async remove() { await db.remove(); if (!closed) { closed = true; sql.closeSync(); } SQLite.deleteDatabaseSync(`bloxplox-${hash}.sqlite`); } };
   } catch (error) { sql.closeSync(); throw error; }
 }

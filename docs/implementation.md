@@ -129,3 +129,28 @@ After explicit user approval, the separate Calendar OAuth flow granted only read
 The primary calendar successfully registered a Google notification watch. Google rejects watches on its holiday feeds with `pushNotSupportedForRequestedResource`; those feeds use the existing refresh-on-open, five-minute active refresh and daily catch-up paths. The UI exposes this limitation. An actual external Google event edit and resulting webhook delivery have not been exercised.
 
 Google billing remains unlinked, the brand is verified and published, and support uses the explicitly approved public address. The sensitive Calendar scope was submitted for review on 12 October 2026 with its scope justification and an unlisted demonstration video covering both OAuth clients. YouTube completed processing and reported no copyright issues; its saved video visibility is Unlisted. Google Verification Center confirms that the app's data access is under review. Until Google approves this scope, Calendar connection displays the unverified-app warning and is subject to the 100-user lifetime cap. Sign-in and approved Calendar connections remain operational during review. Apple team/signing and Stripe onboarding remain pending; all application features remain free.
+
+### Native beta preparation — 13 October 2026
+
+Added authenticated account deletion in web/native Settings and a public deletion
+page. A transactional account marker prevents offline writes from restoring data;
+Streams/SQS drives retryable cleanup of Cognito, planner history, calendar tokens
+and integration metadata. Tests exercise account isolation, retry/throttling,
+deletion racing a write, and interrupted cleanup. See the native release guide
+for retention, recovery and the inactive-subscription limitation.
+
+Native offline startup now skips its configuration fetch when the device is known
+to be offline. Cached identity is bound to the current Cognito subject, preventing
+an interrupted account switch from showing the previous account's local data.
+Abandoned/cancelled native OAuth attempts remove their PKCE state. Shared tests
+cover native callback validation and cancellation.
+
+Prepared a manual signed Android APK/AAB workflow using a `main`-restricted GitHub
+environment and an owner-only local signing backup outside this repository. It
+uses standard public runners and no paid build service. Local checks passed:
+74 unit/backend/storage tests, web/native TypeScript, iOS/Android exports, web
+build, CDK synthesis, and 53 browser checks with one intentional keyboard-only
+mobile skip. These checks do not establish native gesture or physical-device
+parity; signed artifact and live deletion verification are recorded separately
+once completed. Apple ownership/signing and Play account verification are still
+distribution prerequisites.
