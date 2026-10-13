@@ -28,3 +28,8 @@ credentials.json
 
 build-ios/
 *.tar.gz
+
+# Never commit Apple private signing keys or Python bytecode.
+*.p8
+*.key
+__pycache__/

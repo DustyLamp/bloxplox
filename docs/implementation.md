@@ -176,3 +176,15 @@ before publishing a downloadable beta. The iOS simulator artifact from run
 login and gesture verification on these artifacts remain outstanding: the
 computer-control tool could not send touch input to the simulator window.
 These results do not establish physical-device or store-release readiness.
+
+## Xube iOS signing preparation (13 October 2026)
+
+The user selected XUBE PTY LTD (`7H234Q95ZH`) for the initial iOS release.
+Created BloxPlox's native identifier and App Store Connect app `6822319641`,
+plus web Services ID `com.bloxplox.signin` with the production Cognito callback.
+The dedicated Developer-role upload key was explicitly approved, privately backed
+up and stored in the `native-beta` environment. Its authenticated Apple API
+request verified BloxPlox's app name and bundle ID. Signing and Apple-login key
+creation are awaiting separate approval. The manual TestFlight workflow and
+profile guards are prepared; no iPhone upload or Apple-login verification is
+claimed at this stage. See [native release setup](mobile-release.md).
