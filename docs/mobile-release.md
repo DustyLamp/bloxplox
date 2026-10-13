@@ -37,8 +37,7 @@ until the release is uploaded and available to the intended testing track.
 
 The existing **Build native previews** workflow produces a signed simulator app
 on the public macOS runner. A simulator app cannot be installed on an iPhone.
-The selected Xube team and BloxPlox app record are documented below. TestFlight
-still requires distribution signing, upload and successful Apple processing. Never
+The selected Xube team and BloxPlox app record are documented below. A first signed iPhone build has been uploaded to TestFlight; Apple processing and device verification are tracked below. Never
 reuse another product's private signing keys or credentials without authorization.
 Complete native authentication, gestures, offline recovery and physical-device
 checks before inviting external testers. Sign in with Apple and its revocation
@@ -73,7 +72,7 @@ Only a random subject identifier, state and deletion dates remain in a receipt.
 Restore procedures must reapply these receipts before serving a restored table.
 PITR backups expire within 35 days. Paid plans remain disabled; before enabling
 subscriptions, extend deletion to cancel/reconcile billing and disclose any
-legally required retention. Apple token revocation must be added with Apple login.
+legally required retention. Apple token revocation is part of the Apple login release described below.
 
 Run `yarn test:live:deletion` with the deployment profile to exercise this flow
 using two disposable accounts. It checks two tabs, an independently cached
@@ -125,7 +124,44 @@ The optional `upload` input defaults to true. A successful upload still needs
 Apple processing and verification in TestFlight before a beta is available.
 This workflow does not submit the app for public App Store review or release it.
 
-Setup status: the app record, Services ID `com.bloxplox.signin`, and approved
-Developer upload key exist. Distribution certificate/profile and the Apple
-login key are awaiting the separate credential-creation approval. No signed
-iPhone build has been uploaded yet. Apple login remains disabled in production.
+The approved distribution certificate and BloxPlox App Store profile expire on
+13 October 2027. The BloxPlox-only Apple sign-in key is stored in AWS Secrets
+Manager as `bloxplox/apple-signin`; no private credentials are in this repository.
+Workflow run `38410573312` on revision `44b5fdb` successfully signed, validated and
+uploaded version 0.1.0 (1001). App Store Connect showed Processing on 13 October.
+This establishes signing/upload; it is not a public release or physical-device QA.
+
+## Apple sign-in and deletion
+
+The Services ID is `com.bloxplox.signin`. Its Cognito callback is
+`https://bloxplox-807550663091.auth.eu-north-1.amazoncognito.com/oauth2/idpresponse`;
+its deletion confirmation callback is
+`https://api.bloxplox.com/account/apple/callback`. Native login uses the same
+Cognito PKCE flow through the system authentication browser, returning to
+`bloxplox://auth`. The Apple button uses Apple's unmodified logo asset.
+Verified matching email addresses link to the existing Cognito subject. Private
+relay addresses are separate addresses, including Apple's newer
+`private.icloud.com` domain; never infer their underlying personal email.
+
+Cognito does not expose the upstream Apple refresh token. For an Apple-linked
+account, deletion therefore asks for a fresh Apple confirmation. A short-lived,
+one-use server state and nonce bind Apple's signed identity token to the linked
+Apple subject. The resulting refresh token remains in a server-only encrypted
+DynamoDB record. A separate client state binds the return URL and currently
+signed-in BloxPlox subject; the callback cannot delete an account by itself.
+Web and native then make the existing authenticated deletion request. Native
+handles both an active authentication session and a cold-start deep link.
+The cleanup worker revokes Apple access before removing the Cognito account and
+records, retrying failures without discarding the token.
+
+A user who cannot reauthenticate can still choose **Delete without Apple
+confirmation**, with instructions to stop using Apple for BloxPlox in their
+Apple Account settings. This fallback deletes BloxPlox data but requires that
+manual Apple-side step when no provider token has been captured. The public
+account-deletion page retains those instructions. See
+[Apple's account-deletion guidance](https://developer.apple.com/documentation/technotes/tn3194-handling-account-deletions-and-revoking-tokens-for-sign-in-with-apple).
+
+Cognito’s default `no-reply@verificationemail.com` sender is registered in
+Apple’s private-relay email sources and passed its SPF check. This adds no
+mailbox subscription. Live Apple sign-in, private-relay mail delivery and token revocation still need
+verification before claiming the Apple flow is ready for public App Store review.

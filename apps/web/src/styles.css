@@ -85,3 +85,6 @@ body{min-width:320px;padding:12px}button,input,select,textarea{font:inherit}butt
 #bloxplox-v2 .public-features{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:30px 0}#bloxplox-v2 .public-features section{padding:20px;border-radius:20px;color:#282331;background:#c4b0f2}#bloxplox-v2 .public-features section:nth-child(2){background:#ccec75}#bloxplox-v2 .public-features section:nth-child(3){background:#89baff}#bloxplox-v2 .public-features h2{margin-top:0}
 #bloxplox-v2 .public-page footer{border-top:1px solid var(--b-line);padding-top:20px;margin-top:40px}
 @media(max-width:600px){#bloxplox-v2 .public-page{padding:16px 8px;margin:8px auto}#bloxplox-v2 .public-page h1{font-size:29px}#bloxplox-v2 .public-features{grid-template-columns:1fr}#bloxplox-v2 .public-page header{margin-bottom:30px}}
+
+#bloxplox-v2 .auth-apple{background:#000;color:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-size:17px;font-weight:500;min-height:44px;gap:5px;padding-top:6px;padding-bottom:6px}
+#bloxplox-v2 .auth-apple img{flex:none}

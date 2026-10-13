@@ -7,7 +7,7 @@ import { plans } from '../../../../packages/domain/src/index';
 
 interface DataContextValue {
   docs: Document[]; status: SyncStatus; saving: boolean; save: <K extends Kind>(id: string, kind: K, data: Partial<DataByKind[K]>, deleted?: boolean) => Promise<void>;
-  request: (path: string, body?: unknown) => Promise<any>; sync: () => void; signOut: () => Promise<void>; deleteAccount: () => Promise<void>; email: string; error: string; clearError: () => void;
+  request: (path: string, body?: unknown) => Promise<any>; sync: () => void; signOut: () => Promise<void>; deleteAccount: (skipApple?: boolean) => Promise<void>; appleSignIn: boolean; email: string; error: string; clearError: () => void;
 }
 const Context = createContext<DataContextValue | null>(null);
 export const useData = () => { const value = useContext(Context); if (!value) throw new Error('Database unavailable'); return value; };
@@ -75,20 +75,35 @@ export function DataProvider({ auth, identity, onSignOut, children }: { auth: Au
     await session?.sync?.close();
     auth.signOut(); onSignOut();
   };
-  const deleteAccount = async () => {
+  const finishDeletion = async () => {
     if (!auth.config.apiUrl) throw new Error('Account deletion requires a connected account.');
     await auth.request('/account/delete', { confirmation: 'DELETE' });
     const channel = new BroadcastChannel('bloxplox-auth'); channel.postMessage({ type: 'account-deleted', subject: identity.subject }); channel.close();
     await purge.current();
     window.alert('Account deletion started. Server data will be removed in a few minutes.');
   };
+  const deleteAccount = async (skipApple = false) => {
+    if (!skipApple) {
+      const url = await auth.prepareAppleDeletion(`${location.origin}/settings`);
+      if (url) { window.location.assign(url); return; }
+    } else auth.cancelAppleDeletion();
+    await finishDeletion();
+  };
+  const callbackStarted = useRef(false);
+  useEffect(() => {
+    if (!session || callbackStarted.current || !new URL(location.href).searchParams.has('appleDelete')) return;
+    callbackStarted.current = true;
+    const callback = location.href;
+    history.replaceState(null, '', '/settings');
+    void auth.finishAppleDeletion(callback).then(finishDeletion).catch(err => setError(err.message));
+  }, [session, auth]);
   useEffect(() => {
     const channel = new BroadcastChannel('bloxplox-auth');
     channel.onmessage = event => { if (event.data?.type === 'account-deleted' && event.data.subject === identity.subject) { void purge.current().catch(err => setError(err.message)); } else if (event.data === 'signed-out' && !removing.current) { void session?.sync?.close(); onSignOut(); } };
     return () => channel.close();
   }, [session, onSignOut]);
   if (!session) return <main className="loading" role="status">{error || 'Opening BloxPlox…'}</main>;
-  return <Context.Provider value={{ docs, status, saving, save, request: (path, body) => auth.config.apiUrl ? auth.request(path, body) : Promise.resolve({ enabled: false, accounts: [], sources: [] }), sync: () => session.sync?.resync(), signOut, deleteAccount, email: identity.email, error, clearError: () => setError('') }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ docs, status, saving, save, request: (path, body) => auth.config.apiUrl ? auth.request(path, body) : Promise.resolve({ enabled: false, accounts: [], sources: [] }), sync: () => session.sync?.resync(), signOut, deleteAccount, appleSignIn: !!auth.config.socialProviders?.includes('SignInWithApple'), email: identity.email, error, clearError: () => setError('') }}>{children}</Context.Provider>;
 }
 export function useSettings() {
   const { docs, save } = useData();

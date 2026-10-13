@@ -56,3 +56,18 @@ it('uses native callbacks, cleans up cancellation and replaces abandoned PKCE at
   auth.cancelSocialSignIn(cancelled);
   expect([...store.keys()].filter(key => key.startsWith('bloxplox-oauth'))).toEqual([]);
 });
+it('binds Apple deletion to the same account, return URL, unexpired one-use state and a successful confirmation', async () => {
+  auth.config.socialProviders = ['SignInWithApple'];
+  const identity = vi.spyOn(auth, 'identity').mockResolvedValue({ subject: 'owner', email: 'owner@example.test' });
+  const request = vi.spyOn(auth, 'request').mockResolvedValue({ url: 'https://appleid.apple.com/auth/authorize?state=server' });
+  const begin = async () => { await auth.prepareAppleDeletion('bloxplox://account-delete'); return JSON.parse(store.get('bloxplox-apple-deletion')!); };
+  let pending = await begin();
+  expect(request).toHaveBeenCalledWith('/account/apple/prepare', expect.objectContaining({ state: pending.state, confirmation: 'DELETE' }));
+  const callback = `bloxplox://account-delete?appleDelete=ready&state=${pending.state}`;
+  await auth.finishAppleDeletion(callback); await expect(auth.finishAppleDeletion(callback)).rejects.toThrow('expired');
+  pending = await begin(); await expect(auth.finishAppleDeletion(`bloxplox://attacker?appleDelete=ready&state=${pending.state}`)).rejects.toThrow('expired');
+  pending = await begin(); await expect(auth.finishAppleDeletion(`bloxplox://account-delete?appleDelete=cancelled&state=${pending.state}`)).rejects.toThrow('cancelled');
+  pending = await begin(); store.set('bloxplox-apple-deletion', JSON.stringify({ ...pending, expires: 0 })); await expect(auth.finishAppleDeletion(`bloxplox://account-delete?appleDelete=ready&state=${pending.state}`)).rejects.toThrow('expired');
+  pending = await begin(); identity.mockResolvedValue({ subject: 'other-owner', email: 'other@example.test' }); await expect(auth.finishAppleDeletion(`bloxplox://account-delete?appleDelete=ready&state=${pending.state}`)).rejects.toThrow('expired');
+  await begin(); auth.signOut(); expect(store.has('bloxplox-apple-deletion')).toBe(false);
+});

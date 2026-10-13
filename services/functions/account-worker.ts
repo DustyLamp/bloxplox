@@ -4,6 +4,7 @@ import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import type { Context, SQSEvent, SQSBatchResponse } from 'aws-lambda';
 import { ddb } from './store';
 import { deletionKey } from './account-state';
+import { revokeAppleToken } from './apple-tokens';
 
 const cognito = new CognitoIdentityProviderClient({}), queue = new SQSClient({});
 type Job = { subject: string; phase?: 'revoke' | 'external' | 'connections' | 'records'; cursor?: Record<string, unknown> };
@@ -29,6 +30,8 @@ async function clean(job: Job, remaining: () => number) {
   }
   const continueLater = async (phase: Job['phase'], cursor?: Job['cursor']) => queue.send(new SendMessageCommand({ QueueUrl: process.env.DELETION_QUEUE_URL!, MessageBody: JSON.stringify({ subject: job.subject, phase, cursor }) }));
   if (!job.phase || job.phase === 'revoke') {
+    const apple = (await ddb.send(new GetCommand({ TableName: table, Key: { pk: `USER#${job.subject}`, sk: 'APPLEAUTH#revocation' }, ConsistentRead: true }))).Item;
+    if (apple?.refreshToken) await revokeAppleToken(apple.refreshToken);
     let cursor = job.phase === 'revoke' ? job.cursor : undefined;
     do {
       if (remaining() < 25000) { await continueLater('revoke', cursor); return; }
@@ -53,7 +56,7 @@ async function clean(job: Job, remaining: () => number) {
       if (remaining() < 15000) { await continueLater(phase, cursor); return; }
       const page = phase === 'records'
         ? await ddb.send(new QueryCommand({ TableName: table, ConsistentRead: true, KeyConditionExpression: 'pk = :pk', ExpressionAttributeValues: { ':pk': `USER#${job.subject}` }, ProjectionExpression: 'pk, sk', Limit: 100, ExclusiveStartKey: cursor }))
-        : await ddb.send(new ScanCommand({ TableName: phase === 'external' ? table : connections, ConsistentRead: true, FilterExpression: phase === 'external' ? '#owner = :owner AND (begins_with(pk, :watch) OR begins_with(pk, :oauth))' : 'userId = :owner', ...(phase === 'external' ? { ExpressionAttributeNames: { '#owner': 'owner' } } : {}), ExpressionAttributeValues: { ':owner': job.subject, ...(phase === 'external' ? { ':watch': 'GOOGLEWATCH#', ':oauth': 'GOOGLESTATE#' } : {}) }, ProjectionExpression: phase === 'external' ? 'pk, sk' : 'connectionId', ExclusiveStartKey: cursor }));
+        : await ddb.send(new ScanCommand({ TableName: phase === 'external' ? table : connections, ConsistentRead: true, FilterExpression: phase === 'external' ? '#owner = :owner AND (begins_with(pk, :watch) OR begins_with(pk, :oauth) OR begins_with(pk, :apple))' : 'userId = :owner', ...(phase === 'external' ? { ExpressionAttributeNames: { '#owner': 'owner' } } : {}), ExpressionAttributeValues: { ':owner': job.subject, ...(phase === 'external' ? { ':watch': 'GOOGLEWATCH#', ':oauth': 'GOOGLESTATE#', ':apple': 'APPLEDELETE#' } : {}) }, ProjectionExpression: phase === 'external' ? 'pk, sk' : 'connectionId', ExclusiveStartKey: cursor }));
       await removeRows(phase === 'connections' ? connections : table, page.Items ?? [], row => phase === 'connections' ? { connectionId: row.connectionId } : { pk: row.pk, sk: row.sk });
       cursor = page.LastEvaluatedKey;
     } while (cursor);

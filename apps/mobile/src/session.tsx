@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { AppState, Text, View } from 'react-native';
+import { Alert, AppState, Linking, Text, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { disableReminders } from './reminders';
 import NetInfo from '@react-native-community/netinfo';
 import { AuthService, type RuntimeConfig } from '../../../packages/auth/src/index';
@@ -33,7 +34,7 @@ export async function createAuth() {
 }
 interface Session {
   request(path: string, body?: unknown): Promise<any>; docs: Document[]; status: SyncStatus; save: SaveRecord; sync(): void;
-  signOut(): Promise<void>; deleteAccount(): Promise<void>; email: string; billing: BillingStatus; refreshBilling(): Promise<void>;
+  signOut(): Promise<void>; deleteAccount(skipApple?: boolean): Promise<void>; appleSignIn: boolean; email: string; billing: BillingStatus; refreshBilling(): Promise<void>;
 }
 const Context = createContext<Session | null>(null);
 export function useData() { const value = useContext(Context); if (!value) throw new Error('Storage unavailable'); return value; }
@@ -85,9 +86,42 @@ export function DataProvider({ auth, identity, onSignOut, children }: { auth: Au
     const write = writeRecord(session.database.db, id, kind, data, deleted, actor.current);
     pending.current.add(write); try { await write; } finally { pending.current.delete(write); }
   };
+  const finishDeletion = async () => {
+    await auth.request('/account/delete', { confirmation: 'DELETE' });
+    await purge.current();
+    Alert.alert('Account deletion started', 'Server data will be removed in a few minutes.');
+  };
+  const callbackWork = useRef<{ url: string; work: Promise<void> } | undefined>(undefined);
+  const finishApple = (url: string) => {
+    if (callbackWork.current?.url === url) return callbackWork.current.work;
+    const work = auth.finishAppleDeletion(url).then(finishDeletion);
+    callbackWork.current = { url, work };
+    return work;
+  };
+  useEffect(() => {
+    if (!session) return;
+    const complete = (url: string | null) => {
+      if (url?.startsWith('bloxplox://account-delete?')) void finishApple(url).catch(err => Alert.alert('Account not deleted', err.message));
+    };
+    void Linking.getInitialURL().then(complete);
+    const listener = Linking.addEventListener('url', event => complete(event.url));
+    return () => listener.remove();
+  }, [session, auth]);
+  const deleteAccount = async (skipApple = false) => {
+    if (!skipApple) {
+      const url = await auth.prepareAppleDeletion('bloxplox://account-delete');
+      if (url) {
+        const result = await WebBrowser.openAuthSessionAsync(url, 'bloxplox://account-delete');
+        if (result.type === 'success') { await finishApple(result.url); return; }
+        auth.cancelAppleDeletion();
+        throw new Error('Apple confirmation was cancelled. Try again, or delete without Apple confirmation.');
+      }
+    } else auth.cancelAppleDeletion();
+    await finishDeletion();
+  };
   if (!session) return <View style={{ padding: 24 }}><Text>{error || 'Opening BloxPlox…'}</Text></View>;
   return <Context.Provider value={{ docs, status, save, request: (path, body) => auth.request(path, body), email: identity.email, sync: () => session.sync.resync(), billing, refreshBilling,
-    async deleteAccount() { await auth.request('/account/delete', { confirmation: 'DELETE' }); await purge.current(); },
+    deleteAccount, appleSignIn: !!auth.config.socialProviders?.includes('SignInWithApple'),
     async signOut() { await Promise.all([...pending.current]); await session.sync.close(); await disableReminders(); auth.signOut(); onSignOut(); },
   }}>{children}</Context.Provider>;
 }
