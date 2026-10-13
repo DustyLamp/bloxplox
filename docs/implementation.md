@@ -292,3 +292,22 @@ identity verification. It requires Xube's D-U-N-S number and public developer
 phone/email. The owner requested lookup of the existing D-U-N-S registration.
 The unrelated Mylk Me payments profile was not selected, no new payments profile
 has been created, and no registration fee has been paid.
+
+
+## Corrected mobile beta delivery and consecutive Things input
+
+PR #19 (`f8d9195`) passed all PR and main checks. The final simulator inspection
+confirmed the restored design, compact List rows, original Grid layout and habit
+actions. Numeric result 35 and the Grid preference persisted to the live API.
+The QA account and 55 records were removed. iOS workflow `38440478964` produced
+1004, now testing in the authorized internal TestFlight group. Android workflow
+`38440483109` produced signed build 1005; verified artifacts and emulator upgrade/
+cold launch are recorded in mobile-release.md. Both use the exact PR #19 revision.
+
+CodePipeline execution `75730ffb-e50e-4dcc-9558-65d602f34567` stopped at a browser
+check before deploying. It exposed a pre-existing web input race: saving one
+Thing cleared text already typed for the next Thing. The fix clears only an
+unchanged submitted name. Its browser regression checks preservation of the next
+name and waits for both created Things before saving their block; six repeated
+desktop/mobile runs passed locally. No native code or visual styling changes
+are part of that fix. Deployment verification must follow its merge.

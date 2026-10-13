@@ -38,7 +38,7 @@ until the release is uploaded and available to the intended testing track.
 The existing **Build native previews** workflow produces a signed simulator app
 on the public macOS runner. A simulator app cannot be installed on an iPhone.
 The selected Xube team and BloxPlox app record are documented below. Signed iPhone
-builds 1001 and 1002 are available to the invited internal TestFlight tester. Never
+build 1004 is available to the invited internal TestFlight tester. Never
 reuse another product's private signing keys or credentials without authorization.
 Complete native authentication, gestures, offline recovery and physical-device
 checks before inviting external testers. Sign in with Apple and its revocation
@@ -206,3 +206,30 @@ the existing registration number. Two-step verification is enabled on the
 approved Google account. Public developer contact details remain to be confirmed.
 No registration payment has been made and the unrelated Mylk Me payments profile
 has not been selected.
+
+
+## Current beta: spacing refinement
+
+PR #19 restored the pre-redesign native interface, with only Habits List row
+height, text spacing and status alignment changed. Signed builds use revision
+`f8d919566c873a301bc48429fe72a1b847b65bf5`:
+
+- iOS 0.1.0 (1004), workflow `38440478964`: signed, validated, uploaded,
+  processed and **IN_BETA_TESTING** in the existing BloxPlox beta internal group.
+  TestFlight notes describe the limited spacing change and outstanding device checks.
+- Android 0.1.0 (1005), workflow `38440483109`: release signature and downloaded
+  checksums verified; upgrade and cold launch passed on the API 34 arm64 emulator
+  without React Native/Android runtime errors. APK/AAB and checksums are retained
+  in the [signed prerelease](https://github.com/DustyLamp/bloxplox/releases/tag/android-beta-0.1.0-1005).
+
+The broader PR #18 redesign builds were cancelled before distribution. A fresh
+local iOS simulator bundle verified the final List and unchanged Grid layouts,
+opening the original habit action sheet, and numeric result 35 reaching the
+backend with the global Grid preference. The disposable account and its records
+were removed after testing. Physical-device gestures, native offline recovery,
+reminders, private-relay delivery and real Apple revocation remain beta checks.
+
+The approved Apple D-U-N-S lookup returned no match for Xube's saved membership
+address. No duplicate D-U-N-S registration was requested. Google Play remains at
+its organization identity form, awaiting the existing identifier and confirmed
+public contact details. The existing Xube Apple membership is unchanged.
