@@ -182,7 +182,10 @@ Cognito’s default `no-reply@verificationemail.com` sender is registered in
 Apple’s private-relay email sources and passed its SPF check. This adds no
 mailbox subscription. CodePipeline execution
 `35c2cb17-1be0-4dd2-bd74-bdc44eafeefa` deployed revision `96ccb37` successfully;
-the production runtime advertises Google and Apple and the Apple button reaches
-the registered Apple authorization screen. The owner must complete that login.
-Live Apple sign-in, private-relay mail delivery and upstream token revocation
-still need verification before claiming readiness for public App Store review.
+the production runtime advertises Google and Apple. The owner completed a fresh
+Apple passkey/Touch ID login on the web. The matching verified email linked to
+the original account alongside Google; its subject and planner were preserved.
+The app displayed Synced, and the authenticated session survived reload.
+Private-relay mail delivery, upstream token revocation and physical-device
+native login still need verification before claiming readiness for public App
+Store review. Do not use the owner's real account for destructive deletion QA.

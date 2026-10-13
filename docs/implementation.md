@@ -9,8 +9,8 @@
 - A self-updating CDK CodePipeline deploys `main`; no separate manual production gate.
 
 Current delivery status (13 October 2026): web/backend revision `96ccb37` is live,
-Google login is verified and Apple login is deployed awaiting a real provider
-login. iOS build 1002 is in the invited internal TestFlight group; signed Android
+Google and Apple web login are verified, including matching-email linkage to the
+existing account. iOS build 1002 is in the invited internal TestFlight group; signed Android
 build 1003 is a GitHub prerelease. Public App Store/Play release, physical-device
 QA and Google's Calendar scope review remain outstanding. Earlier dated entries
 below describe the state at those checkpoints.
@@ -241,3 +241,22 @@ match CI checksums. An upgrade installation and cold launch on the API 34 arm64
 emulator passed without runtime errors. The signed APK/AAB are retained in the
 GitHub prerelease. Native social login, gestures, offline recovery and reminders
 still need physical-device verification; see mobile-release.md for setup and limits.
+
+## Real Apple sign-in verification (13 October 2026)
+
+The owner completed a fresh Apple passkey/Touch ID login on the production web
+app. The prior, long-running attempt returned Cognito's generic session error
+before invoking account linking; the fresh attempt succeeded without a code or
+configuration change. Cognito confirms one matching account with both Google and
+SignInWithApple identities, its original subject unchanged and email verified.
+The existing planner and saved global layout appeared with **Synced**; reloading
+retained the authenticated session and synchronized state. No planner records
+were changed or deleted for this check.
+
+The `d1a5370` documentation/live-test merge also passed main CI and CodePipeline
+execution `a00aff9b-4fd4-4070-91cc-9bef5a3a0a4c`, including Amplify publication.
+Screenshots and private verification details remain in ignored test results.
+Hide My Email delivery, real Apple-token revocation and physical-device native
+login/gesture/offline checks are still separate outstanding verification items.
+Google's Verification Center was rechecked after the Apple login: branding is
+verified and published; Calendar data access remains under review.
