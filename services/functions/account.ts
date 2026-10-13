@@ -9,7 +9,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
   try {
     const user = await authenticate(event, true);
     if (event.requestContext.http.method !== 'POST' || event.rawPath !== '/account/delete') return response(404, {});
-    if (event.isBase64Encoded || !event.body || event.body.length > 100 || JSON.parse(event.body).confirmation !== 'DELETE') return response(400, { error: 'Confirm account deletion.' });
+    if (event.isBase64Encoded || !event.body || event.body.length > 100 || JSON.parse(event.body)?.confirmation !== 'DELETE') return response(400, { error: 'Confirm account deletion.' });
     // The durable marker is also the outbox. Streams queues the cleanup even
     // if this request is interrupted immediately after the write succeeds.
     try {

@@ -23,7 +23,7 @@ const event = (body: unknown = { confirmation: 'DELETE' }) => ({ rawPath: '/acco
 const job = (extra = {}) => ({ Records: [{ messageId: 'cleanup', body: JSON.stringify({ subject: owner, ...extra }) }] } as SQSEvent);
 beforeEach(() => { state.items.clear(); state.connections.clear(); state.queued = []; state.cognito = []; state.unauthorized = false; state.throttle = false; process.env.DATA_TABLE = 'data'; process.env.CONNECTION_TABLE = 'connections'; process.env.DELETION_QUEUE_URL = 'queue'; process.env.USER_POOL_ID = 'pool'; vi.unstubAllGlobals(); });
 it('requires confirmation and authenticates ownership; duplicate requests preserve the durable job', async () => {
-  expect((await request(event({ confirmation: 'no' }))).statusCode).toBe(400); expect(state.items.size).toBe(0);
+  expect((await request(event(null))).statusCode).toBe(400); expect((await request(event({ confirmation: 'no' }))).statusCode).toBe(400); expect(state.items.size).toBe(0);
   state.unauthorized = true; expect((await request(event())).statusCode).toBe(401); state.unauthorized = false;
   expect((await request(event({ confirmation: 'DELETE', subject: 'victim' }))).statusCode).toBe(202);
   const marker = state.items.get(`DELETED#${owner}|ACCOUNT`); expect(marker.username).toBe('native-qa');

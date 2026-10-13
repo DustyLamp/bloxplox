@@ -23,7 +23,8 @@
     "deploy": "yarn cdk deploy --all --require-approval never",
     "mobile": "yarn workspace @bloxplox/mobile start",
     "typecheck:mobile": "yarn workspace @bloxplox/mobile typecheck",
-    "mobile:icons": "node scripts/mobile-icons.mjs"
+    "mobile:icons": "node scripts/mobile-icons.mjs",
+    "test:live:deletion": "tsx tests/live/account-deletion.mts"
   },
   "devDependencies": {
     "@playwright/test": "1.64.0",

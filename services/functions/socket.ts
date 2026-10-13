@@ -33,7 +33,7 @@ export async function handler(event: APIGatewayProxyWebsocketEventV2 & { querySt
     await api.send(new PostToConnectionCommand({ ConnectionId: connectionId, Data: new TextEncoder().encode('{"type":"pong"}') }));
     return { statusCode: 200 };
   } catch (error) {
-    if (error instanceof Error && error.name === 'ConditionalCheckFailedException') return { statusCode: 401 };
+    if (error instanceof Error && ['ConditionalCheckFailedException', 'AccountDeleted'].includes(error.name)) return { statusCode: 401 };
     console.error('socket_request_failed', { requestId: event.requestContext.requestId, name: error instanceof Error ? error.name : 'Error' });
     return { statusCode: 500 };
   }

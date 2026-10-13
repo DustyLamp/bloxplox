@@ -154,3 +154,25 @@ mobile skip. These checks do not establish native gesture or physical-device
 parity; signed artifact and live deletion verification are recorded separately
 once completed. Apple ownership/signing and Play account verification are still
 distribution prerequisites.
+
+PR #13 deployed revision `194218eab3a696213d3aae8580faf5ae19485c5b` through
+CodePipeline execution `ba63faac-3f91-4d03-9df8-a3df78787557`; CloudFormation
+completed and Amplify job 13 succeeded. Main CI passed, and all 13 live check
+groups passed against normal production DNS with no browser runtime errors.
+The account-deletion live check verified the Settings flow, cross-tab sign-out,
+immediate access denial, isolation of another account, and actual Streams/SQS
+cleanup of Cognito, planner revisions, OAuth/watch metadata and connection tickets.
+Its follow-up additionally checks the contents of every account-specific
+IndexedDB store and a separate offline browser reconnecting after deletion.
+Empty IndexedDB containers may remain after RxDB removes the records.
+
+Signed Android build 1001 (workflow run `38375654882`) passed signature and
+checksum checks, contained no private signing material, installed in an API 34
+arm64 emulator and cold-launched without React Native/Android runtime errors.
+Its release manifest exposed unused overlay/shared-storage/install-referrer
+permissions; the follow-up excludes these and checks the compiled manifest
+before publishing a downloadable beta. The iOS simulator artifact from run
+`38374956384` installed and cold-launched to the sign-in screen. Native Google
+login and gesture verification on these artifacts remain outstanding: the
+computer-control tool could not send touch input to the simulator window.
+These results do not establish physical-device or store-release readiness.
