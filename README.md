@@ -43,8 +43,9 @@ yarn synth
 
 Live at **https://bloxplox.com**, account `807550663091`, region `eu-north-1`, local AWS profile `bloxplox`. Public account creation requires email verification.
 
-Email and Google login are verified live. Apple login is deployed; completing a
-real Apple sign-in and physical-device checks remains part of beta verification.
+Email, Google and Apple login are verified live on the web. Matching verified
+Google and Apple emails were confirmed to use the existing account and planner.
+Physical-device checks remain part of native beta verification.
 iOS build 1002 is available to the invited internal TestFlight tester. Android
 build 1003 is available as a [signed beta download](https://github.com/DustyLamp/bloxplox/releases/tag/android-beta-0.1.0-1003).
 Neither app has been released publicly through the App Store or Google Play.
