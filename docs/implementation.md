@@ -260,3 +260,39 @@ Hide My Email delivery, real Apple-token revocation and physical-device native
 login/gesture/offline checks are still separate outstanding verification items.
 Google's Verification Center was rechecked after the Apple login: branding is
 verified and published; Calendar data access remains under review.
+
+
+## Native design alignment (13 October 2026)
+
+The owner reported completing the TestFlight 1002 Apple-login check and requested
+closer alignment with the approved mobile designs and RealTracker lists. This
+is an owner-reported login result, not exhaustive physical-device verification.
+
+The native planner now has compact segmented navigation, a shared Grid/List
+control, edge-to-edge duration-sized blocks, RealTracker-style habit rows with
+separate result targets, the mint/pink/grey state palette, and a continuous dark
+history strip. Things uses compact rows with prerequisite links and an explicit
+multi-select scheduling mode. Block categories can retain diagonal colour
+bands. Menu navigation opens a sheet instead of expanding the main header.
+Horizontal gestures capture intentional swipes before child press targets;
+vertical scrolling and the existing direction/repeat-to-clear rules remain.
+
+Validation used a disposable QA account and the CI-built iOS simulator binary
+from `d1a5370`, with the current Hermes/DOM bundles embedded and ad-hoc signed
+locally. This derivative is not the distributed TestFlight artifact. Verified
+binary result toggle/clear, numeric values below and above target, backend
+persistence, a linked habit/block counted once, global layout selection, a
+one-hour draft from available space, focused prerequisites, completion while
+waiting, and scheduling two Things with their combined 45-minute estimate.
+The app retained the QA login, SQLite data and layout through bundle upgrades.
+81 unit tests, mobile TypeScript checking and the iOS bundle export passed.
+Screenshots are in ignored native-beta test results. Automated native drag input
+failed at the simulator window-routing layer; swipe, resize and rearrangement
+still need physical-device checks. Native offline recovery and reminders also
+remain separate device checks.
+
+The approved mylkme Google account now has 2-step verification enabled. Play
+signup accepted the developer name XUBE PTY LTD and reached organization
+identity verification. It requires Xube's D-U-N-S number and public developer
+phone/email from the owner. The existing Mylk Me payments profile was not used,
+no new payments profile has been created, and no registration fee has been paid.

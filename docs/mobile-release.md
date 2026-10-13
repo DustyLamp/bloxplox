@@ -186,6 +186,21 @@ the production runtime advertises Google and Apple. The owner completed a fresh
 Apple passkey/Touch ID login on the web. The matching verified email linked to
 the original account alongside Google; its subject and planner were preserved.
 The app displayed Synced, and the authenticated session survived reload.
-Private-relay mail delivery, upstream token revocation and physical-device
-native login still need verification before claiming readiness for public App
-Store review. Do not use the owner's real account for destructive deletion QA.
+The owner reported completing the TestFlight 1002 Apple-login check.
+Private-relay mail delivery, upstream token revocation, native gestures, offline
+recovery and reminders still need verification before claiming readiness for
+public App Store review. Do not use the owner's real account for destructive deletion QA.
+
+
+## Mobile design follow-up
+
+The native layout now follows the compact approved Blocks design and RealTracker
+habit lists: separated result tap targets, numeric target descriptions, full-width
+status colours, shared history and a single Grid/List setting. Things supports
+compact prerequisites and selection before scheduling. See implementation.md for
+simulator test evidence and remaining physical-device checks.
+
+Xube Play signup is paused at the D-U-N-S identity form, awaiting the owner's
+business identifier and public contact details. Two-step verification is enabled
+on the approved Google account. No registration payment has been made and the
+unrelated Mylk Me payments profile has not been selected.

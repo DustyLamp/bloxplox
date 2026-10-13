@@ -7,9 +7,10 @@ import { blankBlock } from '../../../packages/domain/src/actions';
 import type { AuthService } from '../../../packages/auth/src/index';
 import { Auth } from './Auth';
 import { createAuth, DataProvider, useActions, useData, useSettings } from './session';
-import { Button, ErrorText, Field, Loading, Logo, s, Sheet, Txt } from './ui';
+import { Button, ErrorText, Field, Loading, s, Sheet, Txt } from './ui';
 import { Blocks, Habits } from './Boards';
 import { History } from './History';
+import { PlannerHeader } from './PlannerHeader';
 import { Things } from './Things';
 import { Graph } from './Graph';
 import { BlockEditor, HabitEditor, HabitResult, MovePicker, RuleEditor, ThingEditor } from './Editors';
@@ -48,11 +49,13 @@ function Main() {
   useEffect(() => { const timer = setTimeout(() => void refreshReminders(docs, settings.timezone).catch(() => {}), 2000); return () => clearTimeout(timer); }, [docs, settings.timezone, epoch]);
   useEffect(() => { if (backlogBusy.current) return; const today = localDate(settings.timezone), due = entities(docs, 'block').filter(b => !b.timing.date && b.backlogDate && (b.backlogDate === today || settings.autoBacklog && b.backlogDate < today)).sort((a, b) => a.order - b.order); if (!due.length) return; backlogBusy.current = true; const block = due[0]; void actions.place({ ...block, timing: { ...block.timing, date: today, start: settings.dayStart }, backlogDate: null }, 'free').then(() => { backlogBusy.current = false; setEpoch(n => n + 1); }).catch(error => { backlogBusy.current = false; setError(error.message); }); }, [docs, settings.autoBacklog, settings.dayStart, settings.timezone, epoch]);
   const repeat = (block: Block) => { const original = entities(docs, 'rule').find(r => r.id === block.ruleId); setDialog({ type: 'rule', block, rule: applicableRule(entities(docs, 'rule').filter(r => r.seriesId === original?.seriesId)) ?? original }); };
-  return <><View style={{ paddingHorizontal: 12, paddingTop: 4, gap: 8 }}><View style={s.spread}><Pressable accessibilityLabel="BloxPlox home" onPress={() => go('blocks')}><Logo/></Pressable><View style={[s.row, { flex: 1, justifyContent: 'center', gap: 3 }]}>{['blocks', 'habits', 'things'].map(tab => <Button key={tab} primary={page === tab || tab === 'things' && page === 'graph'} style={{ paddingHorizontal: 9 }} onPress={() => go(tab)}>{tab[0].toUpperCase() + tab.slice(1)}</Button>)}</View><Button label="Menu" onPress={() => setMenu(!menu)}>☰</Button></View><View style={s.spread}><View style={[s.row, { gap: 3 }]}><Button label="Previous day" onPress={() => setDate(shiftDate(date, -1))}>‹</Button><Pressable accessibilityRole="button" accessibilityLabel="Choose date" onPress={() => setDialog({ type: 'calendar' })}><Txt small>{formatDate(date)}</Txt></Pressable><Button label="Next day" onPress={() => setDate(shiftDate(date, 1))}>›</Button></View><View style={[s.row, { gap: 3 }]}>{(['grid', 'list'] as const).map(layout => <Button key={layout} primary={settings.layout === layout} onPress={() => run(saveSettings({ layout }))} style={{ paddingHorizontal: 8 }}>{layout === 'grid' ? 'Grid' : 'List'}</Button>)}</View></View>
-    <Pressable onPress={() => status === 'sign-in' ? run(signOut()) : sync()} accessibilityLabel="Sync status"><Txt small style={{ paddingBottom: 7 }}>{({ synced: '● Synced', syncing: '◌ Syncing', offline: '○ Offline · saved on this device', retrying: '○ Saved on this device · retry sync', 'sign-in': '○ Sign in again to sync' })[status]}</Txt></Pressable>
-    {menu && <View style={[s.row, { paddingBottom: 12 }]}>{[['backlog', 'Backlog'], ['calendars', 'Calendars'], ['manage', 'Manage habits'], ['categories', 'Categories'], ['history', 'History'], ['templates', 'Templates'], ...(paidPlansEnabled ? [['pricing', 'Pricing']] : []), ['settings', 'Settings']].map(([key, name]) => <Button key={key} onPress={() => { if (key === 'history') setStatsHabit(undefined); go(key); }}>{name}</Button>)}</View>}
-  </View>{['blocks', 'habits'].includes(page) && <History date={date} change={setDate}/>}
-  <ScrollView ref={scroll} scrollEnabled={!dragging} keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>
+  return <><PlannerHeader page={page} date={date} layout={settings.layout} status={status} go={go}
+    changeDay={delta => setDate(shiftDate(date, delta))} chooseDate={() => setDialog({ type: 'calendar' })}
+    changeLayout={layout => run(saveSettings({ layout }))} menu={() => setMenu(true)}
+    sync={() => status === 'sign-in' ? run(signOut()) : sync()}/>
+  {menu && <Sheet title="BloxPlox" close={() => setMenu(false)}>{[['backlog', 'Backlog'], ['calendars', 'Calendars'], ['manage', 'Manage habits'], ['categories', 'Categories'], ['history', 'History'], ['templates', 'Templates'], ...(paidPlansEnabled ? [['pricing', 'Pricing']] : []), ['settings', 'Settings']].map(([key, name]) => <Button key={key} onPress={() => { if (key === 'history') setStatsHabit(undefined); go(key); }}>{name}</Button>)}</Sheet>}
+  {['blocks', 'habits'].includes(page) && <History date={date} change={setDate} manage={page === 'habits' ? () => go('manage') : undefined}/>}
+  <ScrollView ref={scroll} scrollEnabled={!dragging} keyboardShouldPersistTaps="handled" contentContainerStyle={['blocks', 'habits'].includes(page) ? { padding: 3, gap: 3, paddingBottom: 70 } : s.content}>
     {!!error && <View style={s.card}><ErrorText message={error}/><Button onPress={() => setError('')}>Dismiss</Button></View>}
     {page === 'blocks' && <Blocks date={date} openCalendar={slot => setDialog({ type: 'calendar-event', slot })} moving={setDragging} edit={block => setDialog({ type: 'block', block })} add={(start, duration) => setDialog({ type: 'block', block: blankBlock(date, start ?? settings.dayStart, duration) })}/>}
     {page === 'habits' && <Habits date={date} edit={habit => setDialog({ type: 'result', habit })} add={() => setDialog({ type: 'habit' })}/>}
