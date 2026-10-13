@@ -134,6 +134,17 @@ export class ApplicationStack extends Stack {
     });
     for (const path of ['/sync/pull', '/sync/push', '/sync/ticket']) api.addRoutes({ path, methods: [apigw.HttpMethod.POST], integration: new HttpLambdaIntegration(path.replaceAll('/', ''), http) });
     api.addRoutes({ path: '/account/delete', methods: [apigw.HttpMethod.POST], integration: new HttpLambdaIntegration('AccountDeletionRequest', account) });
+    const appleDeletion = fn('AppleDeletion', 'apple-deletion');
+    data.grantReadWriteData(appleDeletion);
+    appleDeletion.addToRolePolicy(new iam.PolicyStatement({ actions: ['cognito-idp:AdminGetUser'], resources: [pool.userPoolArn] }));
+    appleDeletion.addEnvironment('API_URL', publicApiUrl); appleDeletion.addEnvironment('PRODUCTION_ORIGIN', `https://${deployment.domain}`);
+    const appleSecret = secretsmanager.Secret.fromSecretNameV2(this, 'AppleConfiguration', 'bloxplox/apple-signin');
+    for (const worker of [appleDeletion, accountWorker]) {
+      appleSecret.grantRead(worker);
+      worker.addEnvironment('APPLE_CLIENT_ID', apple.clientId); worker.addEnvironment('APPLE_TEAM_ID', apple.teamId); worker.addEnvironment('APPLE_KEY_ID', apple.keyId);
+    }
+    api.addRoutes({ path: '/account/apple/prepare', methods: [apigw.HttpMethod.POST], integration: new HttpLambdaIntegration('AppleDeletionPrepare', appleDeletion) });
+    api.addRoutes({ path: '/account/apple/callback', methods: [apigw.HttpMethod.POST], authorizer: new apigw.HttpNoneAuthorizer(), integration: new HttpLambdaIntegration('AppleDeletionCallback', appleDeletion) });
     for (const path of ['/billing/status', '/billing/checkout', '/billing/portal']) api.addRoutes({ path, methods: [apigw.HttpMethod.POST], integration: new HttpLambdaIntegration(path.replaceAll('/', ''), billing) });
     api.addRoutes({ path: '/billing/webhook', methods: [apigw.HttpMethod.POST], authorizer: new apigw.HttpNoneAuthorizer(), integration: new HttpLambdaIntegration('StripeWebhook', billing) });
     const calendar = fn('GoogleCalendars', 'google');

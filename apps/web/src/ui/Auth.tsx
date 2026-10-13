@@ -1,3 +1,4 @@
+import appleLogo from '../../../../packages/ui/assets/apple-sign-in.png';
 import { useState, type FormEvent } from 'react';
 import type { AuthService } from '../domain/auth';
 import { Button, ErrorText, Field, Logo } from './components/common';
@@ -22,7 +23,7 @@ export function Auth({ auth, onSignedIn, initialError = '' }: { auth: AuthServic
     } finally { setBusy(false); }
   }
   return <main className="auth-shell"><Logo/><p className="auth-intro">Blocks for your day, Habits for routines, and Things for one-off tasks.</p><section className="auth-card"><h1>{title}</h1>
-    {['signin', 'signup'].includes(mode) && auth.config.socialProviders?.map(provider => <Button key={provider} className="bp2-full auth-social" disabled={busy} onClick={async () => { setBusy(true); setError(''); try { window.location.assign(await auth.socialSignIn(provider, `${location.origin}/auth/callback`)); } catch (e) { setError((e as Error).message); setBusy(false); } }}>Continue with {provider === 'Google' ? 'Google' : 'Apple'}</Button>)}
+    {['signin', 'signup'].includes(mode) && auth.config.socialProviders?.map(provider => <Button key={provider} className={`bp2-full auth-social ${provider === 'SignInWithApple' ? 'auth-apple' : ''}`} disabled={busy} onClick={async () => { setBusy(true); setError(''); try { window.location.assign(await auth.socialSignIn(provider, `${location.origin}/auth/callback`)); } catch (e) { setError((e as Error).message); setBusy(false); } }}>{provider === 'SignInWithApple' && <img src={appleLogo} alt="" width={30} height={30}/>}Continue with {provider === 'Google' ? 'Google' : 'Apple'}</Button>)}
     <form onSubmit={submit}>
       <Field label="Email"><input type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)}/></Field>
       {['signin', 'signup', 'reset'].includes(mode) && <Field label="Password"><input type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} required minLength={mode === 'signin' ? 1 : 8} value={password} onChange={e => setPassword(e.target.value)}/></Field>}

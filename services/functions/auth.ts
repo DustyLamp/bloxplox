@@ -8,6 +8,7 @@ export async function authenticate(event: APIGatewayProxyEventV2, allowDeleted =
   const header = event.headers.authorization ?? event.headers.Authorization ?? '';
   if (!header.startsWith('Bearer ')) throw new Error('Unauthorized');
   const claims = await verifier.verify(header.slice(7)).catch(() => { throw new Error('Unauthorized'); });
+  if (typeof claims.username !== 'string' || !claims.username) throw new Error('Unauthorized');
   if (!allowDeleted) await assertAccountActive(claims.sub);
   return { subject: claims.sub, expires: claims.exp, username: claims.username };
 }

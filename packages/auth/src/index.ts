@@ -65,6 +65,30 @@ export class AuthService {
     }
     throw new Error('Sign in again');
   }
+  async prepareAppleDeletion(returnTo: string): Promise<string | null> {
+    this.cancelAppleDeletion();
+    if (!this.config.socialProviders?.includes('SignInWithApple')) return null;
+    const identity = await this.identity();
+    if (!identity) throw new Error('Sign in again.');
+    const state = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+    const result = await this.request('/account/apple/prepare', { confirmation: 'DELETE', state, returnTo });
+    if (!result.url) return null;
+    const url = new URL(result.url);
+    if (url.origin !== 'https://appleid.apple.com' || url.pathname !== '/auth/authorize') throw new Error('Invalid Apple confirmation address.');
+    this.runtime.storage.setItem('bloxplox-apple-deletion', JSON.stringify({ state, returnTo, subject: identity.subject, expires: Date.now() + 600000 }));
+    return url.href;
+  }
+  cancelAppleDeletion() { this.runtime.storage.removeItem('bloxplox-apple-deletion'); }
+  async finishAppleDeletion(callbackUrl: string): Promise<void> {
+    const callback = new URL(callbackUrl), stored = this.runtime.storage.getItem('bloxplox-apple-deletion');
+    if (!stored) throw new Error('This deletion confirmation expired. Return to Settings and try again.');
+    const pending = JSON.parse(stored) as { state: string; returnTo: string; subject: string; expires: number };
+    if (callback.searchParams.get('state') !== pending.state) throw new Error('Invalid deletion confirmation.');
+    this.cancelAppleDeletion();
+    const expected = new URL(pending.returnTo);
+    if (pending.expires <= Date.now() || callback.protocol !== expected.protocol || callback.host !== expected.host || callback.pathname !== expected.pathname || (await this.identity())?.subject !== pending.subject) throw new Error('This deletion confirmation expired. Return to Settings and try again.');
+    if (callback.searchParams.get('appleDelete') !== 'ready') throw new Error('Apple confirmation was cancelled or failed. Try again, or delete without Apple confirmation.');
+  }
   async socialSignIn(provider: 'Google' | 'SignInWithApple', redirectUri: string): Promise<string> {
     if (!this.config.authDomain || !this.config.socialProviders?.includes(provider)) throw new Error('This sign-in method is not available yet.');
     const domain = new URL(this.config.authDomain);
@@ -77,7 +101,7 @@ export class AuthService {
     this.runtime.storage.setItem('bloxplox-oauth-active', state);
     this.runtime.storage.setItem(`bloxplox-oauth:${state}`, JSON.stringify({ verifier, nonce, redirectUri, expires: Date.now() + 10 * 60000 }));
     const url = new URL('/oauth2/authorize', domain);
-    url.search = new URLSearchParams({ client_id: this.config.userPoolClientId, response_type: 'code', redirect_uri: redirectUri, identity_provider: provider, scope: 'openid email profile aws.cognito.signin.user.admin', state, nonce, code_challenge: challenge, code_challenge_method: 'S256', prompt: 'select_account' }).toString();
+    url.search = new URLSearchParams({ client_id: this.config.userPoolClientId, response_type: 'code', redirect_uri: redirectUri, identity_provider: provider, scope: 'openid email profile aws.cognito.signin.user.admin', state, nonce, code_challenge: challenge, code_challenge_method: 'S256', ...(provider === 'Google' ? { prompt: 'select_account' } : {}) }).toString();
     return url.href;
   }
   cancelSocialSignIn(authorizeUrl: string) {
@@ -135,6 +159,7 @@ export class AuthService {
     return new Promise((resolve, reject) => this.user(email).confirmPassword(code.trim(), password, { onSuccess: () => resolve(), onFailure: reject }));
   }
   signOut() {
+    this.cancelAppleDeletion();
     this.pool?.getCurrentUser()?.signOut();
     this.runtime.storage.removeItem(`bloxplox-session:${this.config.userPoolId}`);
     this.runtime.signedOut();

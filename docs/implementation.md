@@ -188,3 +188,28 @@ request verified BloxPlox's app name and bundle ID. Signing and Apple-login key
 creation are awaiting separate approval. The manual TestFlight workflow and
 profile guards are prepared; no iPhone upload or Apple-login verification is
 claimed at this stage. See [native release setup](mobile-release.md).
+
+
+## Signed iPhone upload and Apple login (13 October 2026)
+
+The user approved BloxPlox's dedicated Apple sign-in key and a new Xube team
+distribution certificate restricted by an app-specific provisioning profile.
+Both have private backups; CI signing values are in the main-only native-beta
+environment, and the Apple login key is in BloxPlox's Secrets Manager.
+PR #15 merged the manually dispatched signed-iOS workflow. Run `38410573312`
+successfully compiled, signed, validated and uploaded iOS 0.1.0 (1001) from
+`44b5fdb`. App Store Connect confirms receipt and processing. No invitations or
+public review submission have been sent. Existing Xube app credentials remain
+unchanged. Backend/web deployment remains AWS CodePipeline; its main44b5fdb
+execution succeeded.
+
+The Apple login release adds signed-identity confirmation before Apple-token
+revocation during account deletion, retryable cleanup, and an accessible manual
+fallback. Shared authentication validates callback state, expiry, account and
+return address. Unit coverage is now 81 tests. Web/native type checks, production
+web build, iOS/Android bundle exports and CDK synthesis pass. The browser suite
+passed 53 checks with one intentional mobile keyboard-only skip using installed
+Chrome; the removed Playwright browser cache was not re-downloaded. Apple
+registered Cognito’s default email source with a passing SPF status. Live
+verification and final beta build remain
+pending; see mobile-release.md for the exact setup and limits.

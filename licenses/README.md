@@ -5,3 +5,8 @@
 - The screenshot assets are captures of the BloxPlox prototype with synthetic sample content.
 
 These notices cover the bundled third-party assets. No application-wide open-source license has been selected for BloxPlox.
+
+The Apple sign-in logo in `packages/ui/assets/apple-sign-in.png` is supplied by
+[Apple's button API](https://developer.apple.com/documentation/signinwithapplerestapi/get-a-sign-in-with-apple-button-that-contains-just-the-apple-logo.).
+It is used unchanged solely for the Sign in with Apple control, under
+[Apple's usage guidelines](https://developer.apple.com/sign-in-with-apple/usage-guidelines-for-websites-and-other-platforms/). Apple retains its trademark rights.
