@@ -42,6 +42,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
     }
     return response(404, { error: 'Not found' });
   } catch (error) {
+    if (error instanceof Error && error.name === 'AccountDeleted') return response(410, { error: 'This account has been deleted.' });
     if (error instanceof Error && error.message === 'Unauthorized') return response(401, { error: 'Sign in again' });
     if (error instanceof z.ZodError || error instanceof SyntaxError) return response(400, { error: 'Invalid data' });
     console.error('sync_request_failed', { requestId: event.requestContext.requestId, name: error instanceof Error ? error.name : 'Error' });

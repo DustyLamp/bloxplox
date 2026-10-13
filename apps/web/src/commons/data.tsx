@@ -7,7 +7,7 @@ import { plans } from '../../../../packages/domain/src/index';
 
 interface DataContextValue {
   docs: Document[]; status: SyncStatus; saving: boolean; save: <K extends Kind>(id: string, kind: K, data: Partial<DataByKind[K]>, deleted?: boolean) => Promise<void>;
-  request: (path: string, body?: unknown) => Promise<any>; sync: () => void; signOut: () => Promise<void>; email: string; error: string; clearError: () => void;
+  request: (path: string, body?: unknown) => Promise<any>; sync: () => void; signOut: () => Promise<void>; deleteAccount: () => Promise<void>; email: string; error: string; clearError: () => void;
 }
 const Context = createContext<DataContextValue | null>(null);
 export const useData = () => { const value = useContext(Context); if (!value) throw new Error('Database unavailable'); return value; };
@@ -17,6 +17,7 @@ export function DataProvider({ auth, identity, onSignOut, children }: { auth: Au
   const [docs, setDocs] = useState<Document[]>([]), [status, setStatus] = useState<SyncStatus>('syncing');
   const [session, setSession] = useState<{ db: Database; sync?: ReturnType<typeof startSync> }>(), [error, setError] = useState('');
   const pendingWrites = useRef(new Set<Promise<unknown>>()), [saving, setSaving] = useState(false);
+  const removing = useRef(false), purge = useRef<() => Promise<void>>(async () => {});
   useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => { if (pendingWrites.current.size) { event.preventDefault(); event.returnValue = ''; } };
     window.addEventListener('beforeunload', guard);
@@ -28,12 +29,14 @@ export function DataProvider({ auth, identity, onSignOut, children }: { auth: Au
       const db = await openDatabase(`${auth.config.userPoolId}:${identity.subject}`);
       if (cancelled) { await db.close(); return; }
       const subscription = db.records.find().$.subscribe(rows => setDocs(rows.map(row => wireDocument(row.toJSON()))));
-      const sync = auth.config.apiUrl ? startSync(db, { ...auth.config, subject: identity.subject, token: force => auth.token(force) }, setStatus) : undefined;
+      const sync = auth.config.apiUrl ? startSync(db, { ...auth.config, subject: identity.subject, token: force => auth.token(force), accountDeleted: () => { void purge.current().catch(err => setError(err.message)); } }, setStatus) : undefined;
+      let purging: Promise<void> | undefined;
+      purge.current = () => purging ??= (async () => { removing.current = true; await Promise.allSettled([...pendingWrites.current]); subscription.unsubscribe(); await sync?.close(); await db.remove(); auth.signOut(); onSignOut(); })();
       dispose = async () => { subscription.unsubscribe(); await sync?.close(); await db.close(); };
       setSession({ db, sync });
       if (!sync) setStatus('offline');
       const initializeSettings = async () => {
-        if (cancelled || await db.records.findOne('settings').exec()) return;
+        if (cancelled || removing.current || await db.records.findOne('settings').exec()) return;
         const settings = defaultSettings();
         await writeRecord(db, 'settings', 'settings', settings);
       };
@@ -46,6 +49,7 @@ export function DataProvider({ auth, identity, onSignOut, children }: { auth: Au
         ['movement', 'Movement', '#c5ef51'], ['reading', 'Reading', '#ffe35c'], ['family', 'Family', '#ff86ac'],
       ];
       for (const [id, name, color] of defaults) {
+        if (cancelled || removing.current) break;
         if (await db.records.findOne(`category:${id}`).exec()) continue;
         const next = editDocument(undefined, `category:${id}`, 'category', { name, color }, 'bootstrap');
         next.revision = `bootstrap-${id}`;
@@ -55,7 +59,7 @@ export function DataProvider({ auth, identity, onSignOut, children }: { auth: Au
     return () => { cancelled = true; void dispose?.(); };
   }, [auth, identity.subject]);
   const save: DataContextValue['save'] = async (id, kind, data, deleted) => {
-    if (!session) throw new Error('Still opening storage');
+    if (!session || removing.current) throw new Error('Storage is unavailable');
     if (kind === 'habit' && !deleted && 'active' in data && data.active && !plus) {
       const current = docs.find(d => d.id === id);
       if ((!current || current.deleted || !current.data.active) && entities(docs, 'habit').filter(h => h.active).length >= plans.free.activeHabits) throw new Error('Free includes five active habits. Make one inactive or choose Plus from Pricing.');
@@ -71,13 +75,20 @@ export function DataProvider({ auth, identity, onSignOut, children }: { auth: Au
     await session?.sync?.close();
     auth.signOut(); onSignOut();
   };
+  const deleteAccount = async () => {
+    if (!auth.config.apiUrl) throw new Error('Account deletion requires a connected account.');
+    await auth.request('/account/delete', { confirmation: 'DELETE' });
+    const channel = new BroadcastChannel('bloxplox-auth'); channel.postMessage({ type: 'account-deleted', subject: identity.subject }); channel.close();
+    await purge.current();
+    window.alert('Account deletion started. Server data will be removed in a few minutes.');
+  };
   useEffect(() => {
     const channel = new BroadcastChannel('bloxplox-auth');
-    channel.onmessage = event => { if (event.data === 'signed-out') { void session?.sync?.close(); onSignOut(); } };
+    channel.onmessage = event => { if (event.data?.type === 'account-deleted' && event.data.subject === identity.subject) { void purge.current().catch(err => setError(err.message)); } else if (event.data === 'signed-out' && !removing.current) { void session?.sync?.close(); onSignOut(); } };
     return () => channel.close();
   }, [session, onSignOut]);
   if (!session) return <main className="loading" role="status">{error || 'Opening BloxPlox…'}</main>;
-  return <Context.Provider value={{ docs, status, saving, save, request: (path, body) => auth.config.apiUrl ? auth.request(path, body) : Promise.resolve({ enabled: false, accounts: [], sources: [] }), sync: () => session.sync?.resync(), signOut, email: identity.email, error, clearError: () => setError('') }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ docs, status, saving, save, request: (path, body) => auth.config.apiUrl ? auth.request(path, body) : Promise.resolve({ enabled: false, accounts: [], sources: [] }), sync: () => session.sync?.resync(), signOut, deleteAccount, email: identity.email, error, clearError: () => setError('') }}>{children}</Context.Provider>;
 }
 export function useSettings() {
   const { docs, save } = useData();

@@ -6,15 +6,17 @@ import { wireDocument, type Database } from './database';
 import { browserRuntime, type SyncRuntime } from './runtime';
 
 export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'retrying' | 'sign-in';
-export interface SyncConfig { apiUrl: string; websocketUrl: string; token: (force?: boolean) => Promise<string>; subject: string }
+export interface SyncConfig { apiUrl: string; websocketUrl: string; token: (force?: boolean) => Promise<string>; subject: string; accountDeleted?: () => void }
 type Checkpoint = { sequence: number };
 
 export function startSync(db: Database, config: SyncConfig, onStatus: (status: SyncStatus) => void, runtime: SyncRuntime = browserRuntime()) {
   let closed = false, socket: WebSocket | undefined, reconnectTimer: ReturnType<typeof setTimeout> | undefined;
   let attempts = 0, lastPong = Date.now(), refreshing: Promise<string> | undefined, healthy = false, authFailed = false, connecting = false;
   const lifetime = new AbortController();
+  let deleted = false, closing: Promise<void> | undefined;
   const stream = new Subject<RxReplicationPullStreamItem<Document, Checkpoint>>();
   async function request<T>(path: string, data?: unknown): Promise<T> {
+    if (deleted) throw new Error('Account deleted');
     for (let attempt = 0; attempt < 2; attempt++) {
       let token: string;
       try {
@@ -34,6 +36,7 @@ export function startSync(db: Database, config: SyncConfig, onStatus: (status: S
           body: data ? JSON.stringify(data) : undefined, signal: requestLifetime.signal, cache: 'no-store',
         });
       if (response.status === 401 && attempt === 0) continue;
+      if (response.status === 410) { if (!deleted) { deleted = true; queueMicrotask(() => config.accountDeleted?.()); } authFailed = true; throw new Error('Account deleted'); }
       if (!response.ok) { if (response.status === 401) authFailed = true; throw new Error(`Sync request failed (${response.status})`); }
       authFailed = false;
       if (path !== '/sync/ticket') healthy = true;
@@ -69,7 +72,7 @@ export function startSync(db: Database, config: SyncConfig, onStatus: (status: S
 
   const resync = () => { if (!closed && runtime.isOnline()) replication.reSync(); };
   const reconnect = () => {
-    if (closed || reconnectTimer || !runtime.isOnline()) return;
+    if (closed || deleted || reconnectTimer || !runtime.isOnline()) return;
     reconnectTimer = setTimeout(() => { reconnectTimer = undefined; void connect(); }, Math.min(30000, 500 * 2 ** Math.min(attempts++, 6)) + Math.random() * 300);
   };
   async function connect() {
@@ -101,9 +104,10 @@ export function startSync(db: Database, config: SyncConfig, onStatus: (status: S
   const unsubscribeRuntime = runtime.subscribe(online, offline);
   void connect();
   onStatus(runtime.isOnline() ? 'syncing' : 'offline');
-  return { replication, resync, async close() {
+  return { replication, resync, close() {
+    if (closing) return closing;
     closed = true; lifetime.abort(); clearInterval(heartbeat); clearInterval(fallback); clearTimeout(reconnectTimer);
     unsubscribeRuntime();
-    socket?.close(); subscriptions.forEach(s => s.unsubscribe()); stream.complete(); await replication.cancel();
+    socket?.close(); subscriptions.forEach(s => s.unsubscribe()); stream.complete(); closing = replication.cancel().then(() => {}); return closing;
   } };
 }

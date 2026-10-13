@@ -3,6 +3,7 @@ import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/li
 import type { Context, SQSEvent, SQSBatchResponse } from 'aws-lambda';
 import { canonical, dateSchema, localDate, shiftDate, type CalendarEvent, type Document } from '../../packages/domain/src/index';
 import { ddb } from './store';
+import { assertAccountActive } from './account-state';
 import { googleConfig, googleFetch, type GoogleConfig } from './google-config';
 import { enqueueCalendar, googleToken, item, items, pk, saveImported, stableId, table, type GoogleAccount, type GoogleSource } from './google-store';
 interface RemoteEvent { id: string; status?: string; summary?: string; description?: string; location?: string; start?: { date?: string; dateTime?: string }; end?: { date?: string; dateTime?: string }; recurringEventId?: string; transparency?: string; htmlLink?: string }
@@ -22,6 +23,7 @@ async function watch(owner: string, source: GoogleSource, token: string) {
   if (source.watchId && source.watchResource) await googleFetch('https://www.googleapis.com/calendar/v3/channels/stop', token, { method: 'POST', body: JSON.stringify({ id: source.watchId, resourceId: source.watchResource }) }).catch(() => {});
 }
 async function synchronize(owner: string, sourceId: string, config: GoogleConfig, remaining: () => number) {
+  await assertAccountActive(owner);
   const source = await item<GoogleSource>(owner, `GCALSOURCE#${sourceId}`); if (!source?.enabled) return;
   const account = await item<GoogleAccount>(owner, `GCALACCOUNT#${source.accountId}`); if (!account) return;
   const lock = randomUUID();
@@ -86,6 +88,6 @@ export async function handler(event: SQSEvent | { daily: true }, context?: Conte
   if (!('Records' in event)) return daily();
   const failures: { itemIdentifier: string }[] = [];
   for (const record of event.Records) try { const { owner, sourceId } = JSON.parse(record.body); if (typeof owner !== 'string' || typeof sourceId !== 'string') throw new Error('Invalid job'); await synchronize(owner, sourceId, config, () => context?.getRemainingTimeInMillis() ?? Infinity); }
-  catch (error) { console.error('google_calendar_sync_failed', { name: (error as Error).name }); failures.push({ itemIdentifier: record.messageId }); }
+  catch (error) { if ((error as Error).name === 'AccountDeleted') continue; console.error('google_calendar_sync_failed', { name: (error as Error).name }); failures.push({ itemIdentifier: record.messageId }); }
   return { batchItemFailures: failures };
 }

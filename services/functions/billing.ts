@@ -71,6 +71,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
       await ddb.send(new DeleteCommand({ TableName: process.env.DATA_TABLE!, Key: lock, ConditionExpression: 'nonce = :nonce', ExpressionAttributeValues: { ':nonce': nonce } }));
     }
   } catch (e) {
+    if (e instanceof Error && e.name === 'AccountDeleted') return response(410, { error: 'This account has been deleted.' });
     if (e instanceof Error && e.message === 'Unauthorized') return response(401, { error: 'Sign in again' });
     if (e instanceof z.ZodError || e instanceof SyntaxError) return response(400, { error: 'Invalid request' });
     console.error('billing_request_failed', { requestId: event.requestContext.requestId, name: e instanceof Error ? e.name : 'Error' });

@@ -91,6 +91,15 @@ export class ApplicationStack extends Stack {
     });
     const http = fn('SyncHttp', 'http'), socket = fn('SyncSocket', 'socket'), notify = fn('SyncNotifications', 'notify');
     const billing = fn('Billing', 'billing');
+    const account = fn('Account', 'account'), accountWorker = fn('AccountDeletion', 'account-worker');
+    (accountWorker.node.defaultChild as lambda.CfnFunction).timeout = 120;
+    const deletionFailures = new sqs.Queue(this, 'DeletionFailures', { retentionPeriod: Duration.days(14), encryption: sqs.QueueEncryption.SQS_MANAGED });
+    const deletionQueue = new sqs.Queue(this, 'DeletionJobs', { visibilityTimeout: Duration.minutes(15), encryption: sqs.QueueEncryption.SQS_MANAGED, deadLetterQueue: { queue: deletionFailures, maxReceiveCount: 6 } });
+    for (const worker of [notify, accountWorker]) { deletionQueue.grantSendMessages(worker); worker.addEnvironment('DELETION_QUEUE_URL', deletionQueue.queueUrl); }
+    data.grantReadWriteData(account); data.grantReadWriteData(accountWorker); connections.grantReadWriteData(accountWorker); data.grantReadData(socket);
+    accountWorker.addToRolePolicy(new iam.PolicyStatement({ actions: ['cognito-idp:AdminDeleteUser'], resources: [pool.userPoolArn] }));
+    accountWorker.addEventSource(new SqsEventSource(deletionQueue, { batchSize: 1, maxConcurrency: 2, reportBatchItemFailures: true }));
+    deletionFailures.metricApproximateNumberOfMessagesVisible().createAlarm(this, 'DeletionFailureAlarm', { threshold: 1, evaluationPeriods: 1, alarmDescription: 'Account deletion needs attention. Redrive the failed job after resolving the error.' });
     const stripeSecretName = 'bloxplox/stripe';
     const stripeSecret = secretsmanager.Secret.fromSecretNameV2(this, 'StripeConfiguration', stripeSecretName);
     for (const function_ of [http, billing]) { function_.addEnvironment('PAID_PLANS_ENABLED', 'false'); function_.addEnvironment('STRIPE_SECRET_NAME', stripeSecretName); stripeSecret.grantRead(function_); }
@@ -109,7 +118,7 @@ export class ApplicationStack extends Stack {
     notify.addEventSource(new DynamoEventSource(data, {
       startingPosition: lambda.StartingPosition.LATEST, batchSize: 100, maxBatchingWindow: Duration.seconds(1),
       retryAttempts: 5, bisectBatchOnError: true, reportBatchItemFailures: true, onFailure: new SqsDlq(failures),
-      filters: [lambda.FilterCriteria.filter({ eventName: ['INSERT'], dynamodb: { Keys: { sk: { S: [{ prefix: 'CHANGE#' }] } } } })],
+      filters: [lambda.FilterCriteria.filter({ eventName: ['INSERT'], dynamodb: { Keys: { sk: { S: [{ prefix: 'CHANGE#' }] } } } }), lambda.FilterCriteria.filter({ eventName: ['INSERT'], dynamodb: { Keys: { pk: { S: [{ prefix: 'DELETED#' }] } } } })],
     }));
     failures.metricApproximateNumberOfMessagesVisible().createAlarm(this, 'NotificationFailureAlarm', { threshold: 1, evaluationPeriods: 1, alarmDescription: 'Inspect notification dead letters. HTTP catch-up remains available.' });
     const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'Zone', { hostedZoneId: deployment.hostedZoneId, zoneName: deployment.domain });
@@ -124,6 +133,7 @@ export class ApplicationStack extends Stack {
       defaultAuthorizer: new HttpJwtAuthorizer('Cognito', pool.userPoolProviderUrl, { jwtAudience: [client.userPoolClientId] }),
     });
     for (const path of ['/sync/pull', '/sync/push', '/sync/ticket']) api.addRoutes({ path, methods: [apigw.HttpMethod.POST], integration: new HttpLambdaIntegration(path.replaceAll('/', ''), http) });
+    api.addRoutes({ path: '/account/delete', methods: [apigw.HttpMethod.POST], integration: new HttpLambdaIntegration('AccountDeletionRequest', account) });
     for (const path of ['/billing/status', '/billing/checkout', '/billing/portal']) api.addRoutes({ path, methods: [apigw.HttpMethod.POST], integration: new HttpLambdaIntegration(path.replaceAll('/', ''), billing) });
     api.addRoutes({ path: '/billing/webhook', methods: [apigw.HttpMethod.POST], authorizer: new apigw.HttpNoneAuthorizer(), integration: new HttpLambdaIntegration('StripeWebhook', billing) });
     const calendar = fn('GoogleCalendars', 'google');

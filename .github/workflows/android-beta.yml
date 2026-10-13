@@ -1,0 +1,62 @@
+name: Build signed Android beta
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-beta
+  cancel-in-progress: false
+jobs:
+  android:
+    if: github.ref == 'refs/heads/main' && github.event.repository.private == false
+    environment: native-beta
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn typecheck:mobile
+      - name: Assign monotonically increasing beta version
+        run: echo "BLOXPLOX_BUILD_NUMBER=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+      - run: yarn workspace @bloxplox/mobile prebuild --platform android --no-install
+      - name: Sign bundled APK and Play bundle
+        env:
+          BLOXPLOX_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          BLOXPLOX_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          BLOXPLOX_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          BLOXPLOX_KEY_ALIAS: bloxplox
+        run: |
+          set -euo pipefail
+          export BLOXPLOX_KEYSTORE="$RUNNER_TEMP/bloxplox.jks"
+          trap 'rm -f "$BLOXPLOX_KEYSTORE"' EXIT
+          printf '%s' "$BLOXPLOX_KEYSTORE_BASE64" | base64 --decode > "$BLOXPLOX_KEYSTORE"
+          chmod 600 "$BLOXPLOX_KEYSTORE"
+          node scripts/sign-android.mjs
+          cd apps/mobile/android
+          ./gradlew assembleRelease bundleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=arm64-v8a,x86_64
+      - name: Verify signature and package beta
+        run: |
+          set -euo pipefail
+          mkdir beta
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk beta/BloxPlox-android.apk
+          cp apps/mobile/android/app/build/outputs/bundle/release/app-release.aab beta/BloxPlox-android.aab
+          SIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$SIGNER" verify --print-certs beta/BloxPlox-android.apk > beta/signature.txt
+          if grep -q 'CN=Android Debug' beta/signature.txt; then exit 1; fi
+          sha256sum beta/*.apk beta/*.aab > beta/SHA256SUMS
+          printf 'Source: %s\nVersion code: %s\n' "$GITHUB_SHA" "$BLOXPLOX_BUILD_NUMBER" > beta/build.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bloxplox-android-beta
+          path: beta/
+          retention-days: 3

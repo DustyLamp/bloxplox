@@ -21,9 +21,16 @@ export class AuthService {
   async identity(): Promise<{ subject: string; email: string } | null> {
     if (this.config.region === 'local') return { subject: this.runtime.localSubject || 'local-user', email: 'local@example.test' };
     const offlineIdentity = () => {
-      if (!this.runtime.isOnline() && this.pool?.getCurrentUser()) {
+      const user = this.pool?.getCurrentUser();
+      if (!this.runtime.isOnline() && user) {
         const cached = this.runtime.storage.getItem(`bloxplox-session:${this.config.userPoolId}`);
-        if (cached) return JSON.parse(cached) as { subject: string; email: string };
+        if (cached) {
+          const identity = JSON.parse(cached) as { subject: string; email: string };
+          const token = this.runtime.storage.getItem(`CognitoIdentityServiceProvider.${this.config.userPoolClientId}.${user.getUsername()}.idToken`);
+          // The offline cache must belong to the current Cognito user. A sign-in
+          // interrupted between token storage and identity caching can switch it.
+          if (token && new CognitoIdToken({ IdToken: token }).decodePayload().sub === identity.subject) return identity;
+        }
       }
       return null;
     };
@@ -65,10 +72,20 @@ export class AuthService {
     const encode = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
     const state = encode(crypto.getRandomValues(new Uint8Array(32))), verifier = encode(crypto.getRandomValues(new Uint8Array(32))), nonce = encode(crypto.getRandomValues(new Uint8Array(32)));
     const challenge = encode(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
+    const previous = this.runtime.storage.getItem('bloxplox-oauth-active');
+    if (previous) this.runtime.storage.removeItem(`bloxplox-oauth:${previous}`);
+    this.runtime.storage.setItem('bloxplox-oauth-active', state);
     this.runtime.storage.setItem(`bloxplox-oauth:${state}`, JSON.stringify({ verifier, nonce, redirectUri, expires: Date.now() + 10 * 60000 }));
     const url = new URL('/oauth2/authorize', domain);
     url.search = new URLSearchParams({ client_id: this.config.userPoolClientId, response_type: 'code', redirect_uri: redirectUri, identity_provider: provider, scope: 'openid email profile aws.cognito.signin.user.admin', state, nonce, code_challenge: challenge, code_challenge_method: 'S256', prompt: 'select_account' }).toString();
     return url.href;
+  }
+  cancelSocialSignIn(authorizeUrl: string) {
+    const state = new URL(authorizeUrl).searchParams.get('state');
+    if (state && /^[A-Za-z0-9_-]{43}$/.test(state)) {
+      this.runtime.storage.removeItem(`bloxplox-oauth:${state}`);
+      if (this.runtime.storage.getItem('bloxplox-oauth-active') === state) this.runtime.storage.removeItem('bloxplox-oauth-active');
+    }
   }
   async finishSocialSignIn(callbackUrl: string): Promise<void> {
     const callback = new URL(callbackUrl), state = callback.searchParams.get('state');
@@ -77,6 +94,7 @@ export class AuthService {
     if (!serialized) throw new Error('This sign-in has expired. Please try again.');
     const pending = JSON.parse(serialized) as { verifier: string; nonce: string; redirectUri: string; expires: number };
     this.runtime.storage.removeItem(key);
+    if (this.runtime.storage.getItem('bloxplox-oauth-active') === state) this.runtime.storage.removeItem('bloxplox-oauth-active');
     const redirect = new URL(pending.redirectUri);
     if (pending.expires < Date.now() || callback.protocol !== redirect.protocol || callback.host !== redirect.host || callback.pathname !== redirect.pathname) throw new Error('This sign-in has expired. Please try again.');
     if (callback.searchParams.has('error')) throw new Error('Sign-in was cancelled or could not be completed. Try again.');

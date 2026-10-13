@@ -49,7 +49,7 @@ deploy backend before publishing the matching frontend runtime configuration.
 
 Production checks on 2026-10-12 (Europe/Zurich):
 
-- Cognito SRP authentication and real public-signup email delivery/code confirmation succeeded. No credentials or personal email addresses are stored in this repository.
+- Cognito SRP authentication and real public-signup email delivery/code confirmation succeeded. No credentials are stored in this repository; the later public support address was explicitly approved.
 - Live HTTP checks rejected unauthenticated calls and owner injection; two accounts using identical document IDs remained isolated.
 - Concurrent conditional writes returned one conflict. Independent edits merged, retrying an accepted write did not advance the checkpoint, and small-page catch-up retained every document and tombstone.
 - Streams notified only the owning account. Heartbeat responses and single-use ticket rejection passed.
@@ -91,7 +91,7 @@ PRs #5–#7 delivered the expansion, navigation correction, native graph layout 
 
 Implemented shared prerequisites, templates, native screens/storage/authentication, calendar import services and overlap layouts, split-Thing sessions, Habits naming, and verified-email account linking. The native graph uses the shared React Flow canvas inside a bundled Expo DOM component. Explicit native and DOM dimensions prevent an empty canvas. Switching the global Grid/List setting resets native scroll position to keep the first block visible.
 
-GitHub checks on the final application revision passed: 65 unit/backend/storage tests, web/native TypeScript checks, native bundle exports, production web build, validated CDK synthesis, and 43 browser checks with one intentional mobile keyboard-only skip. The tests cover calendar/DST/month-end boundaries, prerequisite cycles and soft completion, overlap layouts, imported-event overrides, split sessions, offline storage, gestures, account linking safeguards and social callback validation. Live Google/Apple flows remain unverified until their providers are configured.
+GitHub checks on the final application revision passed: 65 unit/backend/storage tests, web/native TypeScript checks, native bundle exports, production web build, validated CDK synthesis, and 43 browser checks with one intentional mobile keyboard-only skip. The tests cover calendar/DST/month-end boundaries, prerequisite cycles and soft completion, overlap layouts, imported-event overrides, split sessions, offline storage, gestures, account linking safeguards and social callback validation. At that release, live Google/Apple flows remained unverified; the later Google verification results are recorded below.
 
 CodeBuild installs only the web/backend workspace dependency graph for production, without the native toolchain. The Amplify publisher now writes its archive to an absolute path: CodePipeline mounts the web build artifact through a symlink, which previously caused the upload to look in the wrong directory. A regression test reproduces that artifact layout. The failed publish left the previous frontend serving; its unused pending Amplify job 7 was cancelled.
 
@@ -99,7 +99,7 @@ A disposable QA account signed in to the normally signed standalone iOS simulato
 
 Native preview builds are manually dispatched with a `platform` choice (`both`, `android`, `ios`); pull requests no longer trigger expensive duplicate native compilations. Standard public-repository runners retain artifacts for one day. Android previews use development signing; iOS artifacts are Release simulator applications. Xcode's normal simulator signing must stay enabled because it embeds the application identity needed by Keychain. Disabling signing produced a SecureStore startup failure; normal signing was verified by launching and signing in to the standalone app.
 
-Google Cloud project **BloxPlox**, ID `bloxplox-production`, number `574465139761`, exists under the user-confirmed personal Google account with no billing linked. After explicit approval, the sign-in and read-only calendar OAuth clients were created, their credentials verified in AWS Secrets Manager, and Calendar API enabled under its terms. Downloaded plaintext credentials were removed. Google consent configuration and real-provider verification remain pending; provider activation is controlled by `infrastructure/config.ts`.
+Google Cloud project **BloxPlox**, ID `bloxplox-production`, number `574465139761`, exists under the user-confirmed personal Google account with no billing linked. After explicit approval, the sign-in and read-only calendar OAuth clients were created, their credentials verified in AWS Secrets Manager, and Calendar API enabled under its terms. Downloaded plaintext credentials were removed. Provider activation is controlled by `infrastructure/config.ts`; subsequent live Google verification is recorded below.
 
 The public product and privacy pages are `/about` and `/privacy`; they load independently of authentication and runtime configuration. Web and native entry points link to privacy, and calendar connection UI explains its separate read-only access. The user approved `iamjeza@gmail.com` as the public support address. Google consent uses that address and is now External / In production, with billing unlinked. Google verified and published the BloxPlox brand. Sensitive Calendar scope verification remains pending; until approval, unverified Calendar access is subject to Google's warning and 100-user lifetime cap. The Google sign-in provider and calendar backend are enabled in deployment configuration. Secrets stay in AWS Secrets Manager. No new Google Account, Workspace licence or domain conversion is needed. Calendar discovery preserves existing selection during metadata refresh and conflicting first imports. Google API field masks request only data used by the application. Local verification passed web/native TypeScript, 67 unit/backend/storage tests and 45 desktop/mobile browser tests with one intentional mobile keyboard-only skip.
 
@@ -114,3 +114,43 @@ Native workflow run `38240608542` succeeded for both platforms on revision `9194
 The final iOS artifact was installed over the earlier simulator build and cold-launched. SecureStore restored its signed-in account and SQLite restored the saved global layout and records. The bundled React Flow graph rendered both Things and their left-to-right edge. Reopening the dependent displayed “Waiting on Get documents”; completing it remained allowed. An authenticated production pull confirmed the resulting completion and edge. Native sign-out returned to the sign-in screen. Screenshots and the verification report are in the ignored native results directory. The native QA account and its 27 DynamoDB records were removed, its local setup credentials deleted, Metro stopped and both QA emulators shut down.
 
 Provider credentials use CloudFormation Secrets Manager dynamic references by secret name. Do not substitute a partial ARN for `bloxplox/google-signin` or `bloxplox/apple-signin`: the six-character `signin` suffix is ambiguous to Secrets Manager. The first Google activation rolled back safely due to this lookup; subsequent synthesis must contain `{{resolve:secretsmanager:bloxplox/google-signin:SecretString:clientSecret::}}`.
+
+
+### Google production activation and real-provider verification — 12 October 2026
+
+PRs #11 and #12 deployed revision `e9e74df17977da9dec8dc4948f069ca1cfd7efba`. CodePipeline execution `417ff96b-3cf2-4aec-a358-9cb380288d8e` succeeded, CloudFormation completed its update, and Amplify job 12 succeeded. The production runtime advertises Google sign-in. Main CI run `38270700965` passed: web/native TypeScript, native bundle exports, 67 unit/backend/storage tests, web build, CDK synthesis and 51 desktop/mobile browser checks, with one intentional mobile keyboard-only skip.
+
+All 13 live check groups passed against production, including account isolation, concurrent conditional writes, idempotence, pagination and tombstones, Streams notifications, WebSocket ticket/reconnect handling, offline reload/merge, Things/prerequisites, account switching, no paywall, rejection of forged calendar imports, and one-hour creation from available space in desktop Grid and touch List. Both disposable test accounts and their data partitions were removed.
+
+Real Google sign-in returned to a synced application. The verified email linked to the existing manually registered Cognito account, retaining its original subject and all 18 pre-existing application documents. Exactly one matching Cognito account remained. This verifies the production web flow; native social-login runtime verification remains outstanding.
+
+After explicit user approval, the separate Calendar OAuth flow granted only read-only calendar-list and event access, alongside account identity. Four calendars were discovered and three selected. Two public holiday calendars imported their 25 December events into both Grid and List. Hiding an event propagated to a second app tab and survived reload; Show again restored it. A server refresh-token exchange succeeded, and a separate Google read confirmed the original holiday event remained present. No Google events were created, edited or deleted. These manual checks used two tabs; independent desktop/mobile replication has separate live-suite coverage.
+
+The primary calendar successfully registered a Google notification watch. Google rejects watches on its holiday feeds with `pushNotSupportedForRequestedResource`; those feeds use the existing refresh-on-open, five-minute active refresh and daily catch-up paths. The UI exposes this limitation. An actual external Google event edit and resulting webhook delivery have not been exercised.
+
+Google billing remains unlinked, the brand is verified and published, and support uses the explicitly approved public address. The sensitive Calendar scope was submitted for review on 12 October 2026 with its scope justification and an unlisted demonstration video covering both OAuth clients. YouTube completed processing and reported no copyright issues; its saved video visibility is Unlisted. Google Verification Center confirms that the app's data access is under review. Until Google approves this scope, Calendar connection displays the unverified-app warning and is subject to the 100-user lifetime cap. Sign-in and approved Calendar connections remain operational during review. Apple team/signing and Stripe onboarding remain pending; all application features remain free.
+
+### Native beta preparation — 13 October 2026
+
+Added authenticated account deletion in web/native Settings and a public deletion
+page. A transactional account marker prevents offline writes from restoring data;
+Streams/SQS drives retryable cleanup of Cognito, planner history, calendar tokens
+and integration metadata. Tests exercise account isolation, retry/throttling,
+deletion racing a write, and interrupted cleanup. See the native release guide
+for retention, recovery and the inactive-subscription limitation.
+
+Native offline startup now skips its configuration fetch when the device is known
+to be offline. Cached identity is bound to the current Cognito subject, preventing
+an interrupted account switch from showing the previous account's local data.
+Abandoned/cancelled native OAuth attempts remove their PKCE state. Shared tests
+cover native callback validation and cancellation.
+
+Prepared a manual signed Android APK/AAB workflow using a `main`-restricted GitHub
+environment and an owner-only local signing backup outside this repository. It
+uses standard public runners and no paid build service. Local checks passed:
+74 unit/backend/storage tests, web/native TypeScript, iOS/Android exports, web
+build, CDK synthesis, and 53 browser checks with one intentional keyboard-only
+mobile skip. These checks do not establish native gesture or physical-device
+parity; signed artifact and live deletion verification are recorded separately
+once completed. Apple ownership/signing and Play account verification are still
+distribution prerequisites.

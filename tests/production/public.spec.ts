@@ -12,4 +12,8 @@ test('privacy and product information remain available without authentication se
   await expect(page.getByRole('heading', { name: 'A day with room for things.', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Open BloxPlox', exact: true })).toHaveAttribute('href', '/blocks');
   expect(configRequests).toBe(0);
+  await page.goto('/delete-account');
+  await expect(page.getByRole('heading', { name: 'Delete your BloxPlox account', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Sign in to delete account', exact: true })).toHaveAttribute('href', '/settings');
+  expect(configRequests).toBe(0);
 });

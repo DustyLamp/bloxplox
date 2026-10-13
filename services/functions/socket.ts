@@ -3,6 +3,7 @@ import { DeleteCommand, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ApiGatewayManagementApiClient, PostToConnectionCommand, DeleteConnectionCommand } from '@aws-sdk/client-apigatewaymanagementapi';
 import type { APIGatewayProxyWebsocketEventV2 } from 'aws-lambda';
 import { ddb } from './store';
+import { assertAccountActive } from './account-state';
 
 export async function handler(event: APIGatewayProxyWebsocketEventV2 & { queryStringParameters?: Record<string, string> }) {
   const { connectionId, routeKey, domainName, stage } = event.requestContext;
@@ -18,6 +19,7 @@ export async function handler(event: APIGatewayProxyWebsocketEventV2 & { querySt
         ConditionExpression: 'expires > :now AND authExpires > :now', ExpressionAttributeValues: { ':now': now },
       }));
       if (!consumed.Attributes) return { statusCode: 401 };
+      await assertAccountActive(consumed.Attributes.userId);
       await ddb.send(new PutCommand({ TableName, Item: { ...key, userId: consumed.Attributes.userId, expires: consumed.Attributes.authExpires } }));
       return { statusCode: 200 };
     }
@@ -27,6 +29,7 @@ export async function handler(event: APIGatewayProxyWebsocketEventV2 & { querySt
       await api.send(new DeleteConnectionCommand({ ConnectionId: connectionId }));
       return { statusCode: 401 };
     }
+    try { await assertAccountActive(connection.userId); } catch { await api.send(new DeleteConnectionCommand({ ConnectionId: connectionId })); return { statusCode: 401 }; }
     await api.send(new PostToConnectionCommand({ ConnectionId: connectionId, Data: new TextEncoder().encode('{"type":"pong"}') }));
     return { statusCode: 200 };
   } catch (error) {

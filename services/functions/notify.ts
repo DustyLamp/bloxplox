@@ -2,6 +2,8 @@ import { QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { ApiGatewayManagementApiClient, PostToConnectionCommand } from '@aws-sdk/client-apigatewaymanagementapi';
 import type { DynamoDBStreamEvent, DynamoDBBatchResponse } from 'aws-lambda';
 import { ddb } from './store';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+const queue = new SQSClient({});
 
 export async function handler(event: DynamoDBStreamEvent): Promise<DynamoDBBatchResponse> {
   const api = new ApiGatewayManagementApiClient({ endpoint: process.env.WEBSOCKET_MANAGEMENT_URL! });
@@ -9,6 +11,11 @@ export async function handler(event: DynamoDBStreamEvent): Promise<DynamoDBBatch
   const owners = new Map<string, string[]>();
   for (const record of event.Records) {
     const pk = record.dynamodb?.Keys?.pk?.S, sk = record.dynamodb?.Keys?.sk?.S;
+    if (record.eventName === 'INSERT' && pk?.startsWith('DELETED#') && sk === 'ACCOUNT') {
+      try { await queue.send(new SendMessageCommand({ QueueUrl: process.env.DELETION_QUEUE_URL!, MessageBody: JSON.stringify({ subject: pk.slice(8) }), DelaySeconds: 180 })); }
+      catch { failures.push({ itemIdentifier: record.dynamodb!.SequenceNumber! }); }
+      continue;
+    }
     if (record.eventName !== 'INSERT' || !pk?.startsWith('USER#') || !sk?.startsWith('CHANGE#')) continue;
     const owner = pk.slice(5);
     owners.set(owner, [...(owners.get(owner) ?? []), record.dynamodb!.SequenceNumber!]);
