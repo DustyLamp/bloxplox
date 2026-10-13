@@ -43,6 +43,12 @@ yarn synth
 
 Live at **https://bloxplox.com**, account `807550663091`, region `eu-north-1`, local AWS profile `bloxplox`. Public account creation requires email verification.
 
+Email and Google login are verified live. Apple login is deployed; completing a
+real Apple sign-in and physical-device checks remains part of beta verification.
+iOS build 1002 is available to the invited internal TestFlight tester. Android
+build 1003 is available as a [signed beta download](https://github.com/DustyLamp/bloxplox/releases/tag/android-beta-0.1.0-1003).
+Neither app has been released publicly through the App Store or Google Play.
+
 The `bloxplox-production` CodePipeline watches `main`, tests the application, synthesizes and updates itself, deploys the backend, then publishes a matching build and runtime configuration to Amplify. Merge to `main` to deploy. No manual pipeline approval is required.
 
 The first pipeline deployment requires the account to be bootstrapped and a GitHub source token in Secrets Manager at `bloxplox/github-token`. Never put the token in source or CDK context.
