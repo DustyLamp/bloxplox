@@ -1,0 +1,137 @@
+name: Build and upload iOS beta
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: Upload the signed build to TestFlight
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: ios-beta
+  cancel-in-progress: false
+jobs:
+  ios:
+    if: github.ref == 'refs/heads/main' && github.event.repository.private == false
+    environment: native-beta
+    runs-on: macos-26
+    timeout-minutes: 55
+    env:
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn typecheck:mobile
+      - run: python3 scripts/ios-profile-test.py
+      - name: Assign beta build number
+        run: |
+          echo "BLOXPLOX_BUILD_NUMBER=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          echo "BLOXPLOX_IOS_SIGNING_METADATA=$RUNNER_TEMP/bloxplox-signing.json" >> "$GITHUB_ENV"
+      - run: yarn workspace @bloxplox/mobile prebuild --platform ios --no-install
+      - name: Install iOS dependencies
+        working-directory: apps/mobile/ios
+        run: pod install
+      - name: Install and validate signing material
+        env:
+          IOS_DISTRIBUTION_P12_BASE64: ${{ secrets.IOS_DISTRIBUTION_P12_BASE64 }}
+          IOS_DISTRIBUTION_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          : "${IOS_DISTRIBUTION_P12_BASE64:?Missing distribution certificate}"
+          : "${IOS_DISTRIBUTION_PASSWORD:?Missing distribution password}"
+          : "${IOS_PROVISIONING_PROFILE_BASE64:?Missing App Store profile}"
+          printf '%s' "$IOS_DISTRIBUTION_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/bloxplox.p12"
+          printf '%s' "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/bloxplox.mobileprovision"
+          security cms -D -i "$RUNNER_TEMP/bloxplox.mobileprovision" > "$RUNNER_TEMP/bloxplox-profile.plist"
+          openssl pkcs12 -in "$RUNNER_TEMP/bloxplox.p12" -passin env:IOS_DISTRIBUTION_PASSWORD -clcerts -nokeys -out "$RUNNER_TEMP/bloxplox-certificate.pem"
+          openssl x509 -in "$RUNNER_TEMP/bloxplox-certificate.pem" -checkend 86400 -noout
+          openssl x509 -in "$RUNNER_TEMP/bloxplox-certificate.pem" -outform DER -out "$RUNNER_TEMP/bloxplox-certificate.der"
+          python3 scripts/ios-profile.py "$RUNNER_TEMP/bloxplox-profile.plist" "$RUNNER_TEMP/bloxplox-certificate.der" "$BLOXPLOX_IOS_SIGNING_METADATA"
+          PROFILE_UUID=$(python3 -c 'import json,os; print(json.load(open(os.environ["BLOXPLOX_IOS_SIGNING_METADATA"]))["uuid"])')
+          echo "BLOXPLOX_PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
+          mkdir -p "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$RUNNER_TEMP/bloxplox.mobileprovision" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          cp "$RUNNER_TEMP/bloxplox.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 32)
+          echo "::add-mask::$KEYCHAIN_PASSWORD"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/bloxplox.keychain-db"
+          security set-keychain-settings -lut 3600 "$RUNNER_TEMP/bloxplox.keychain-db"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/bloxplox.keychain-db"
+          security import "$RUNNER_TEMP/bloxplox.p12" -P "$IOS_DISTRIBUTION_PASSWORD" -A -t cert -f pkcs12 -k "$RUNNER_TEMP/bloxplox.keychain-db"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/bloxplox.keychain-db" > /dev/null
+          security list-keychains -d user -s "$RUNNER_TEMP/bloxplox.keychain-db" "$HOME/Library/Keychains/login.keychain-db"
+          node scripts/sign-ios.mjs
+      - name: Archive iPhone application
+        run: |
+          xcodebuild -workspace apps/mobile/ios/BloxPlox.xcworkspace -scheme BloxPlox -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/BloxPlox.xcarchive" \
+            -derivedDataPath "$RUNNER_TEMP/bloxplox-derived" archive -quiet
+      - name: Export signed application
+        run: |
+          set -euo pipefail
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/BloxPlox.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/bloxplox-signing.plist" -exportPath "$RUNNER_TEMP/bloxplox-export" -quiet
+          mkdir beta
+          cp "$RUNNER_TEMP/bloxplox-export/BloxPlox.ipa" beta/BloxPlox-ios.ipa
+          APP="$RUNNER_TEMP/BloxPlox.xcarchive/Products/Applications/BloxPlox.app"
+          codesign --verify --deep --strict "$APP"
+          codesign -d --entitlements :- "$APP" > "$RUNNER_TEMP/bloxplox-entitlements.plist" 2>/dev/null
+          python3 - <<'PY'
+          import os, plistlib
+          from pathlib import Path
+          base = Path(os.environ['RUNNER_TEMP'])
+          info = plistlib.loads((base/'BloxPlox.xcarchive/Products/Applications/BloxPlox.app/Info.plist').read_bytes())
+          entitlements = plistlib.loads((base/'bloxplox-entitlements.plist').read_bytes())
+          assert info['CFBundleIdentifier'] == 'com.bloxplox.app'
+          assert info['CFBundleVersion'] == os.environ['BLOXPLOX_BUILD_NUMBER']
+          assert entitlements['application-identifier'] == '7H234Q95ZH.com.bloxplox.app'
+          assert not entitlements.get('get-task-allow', False)
+          assert entitlements['com.apple.developer.applesignin'] == ['Default']
+          assert 'aps-environment' not in entitlements
+          assert info['ITSAppUsesNonExemptEncryption'] is False
+          with open(os.environ['GITHUB_ENV'], 'a') as out:
+              out.write('BLOXPLOX_APP_VERSION=' + info['CFBundleShortVersionString'] + '\n')
+          PY
+          shasum -a 256 beta/*.ipa > beta/SHA256SUMS
+          printf 'Source: %s\nBuild: %s\nTeam: 7H234Q95ZH\nApp: 6822319641\n' "$GITHUB_SHA" "$BLOXPLOX_BUILD_NUMBER" > beta/build.txt
+      - name: Upload to TestFlight
+        if: inputs.upload
+        env:
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          umask 077
+          export API_PRIVATE_KEYS_DIR="$RUNNER_TEMP/bloxplox-upload-keys"
+          mkdir -p "$API_PRIVATE_KEYS_DIR"
+          trap 'rm -rf "$API_PRIVATE_KEYS_DIR"' EXIT
+          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > "$API_PRIVATE_KEYS_DIR/AuthKey_$APP_STORE_CONNECT_KEY_ID.p8"
+          xcrun altool --validate-app -f beta/BloxPlox-ios.ipa -t ios --apiKey "$APP_STORE_CONNECT_KEY_ID" --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+          xcrun altool --upload-package beta/BloxPlox-ios.ipa -t ios --apple-id 6822319641 \
+            --bundle-id com.bloxplox.app --bundle-version "$BLOXPLOX_BUILD_NUMBER" \
+            --bundle-short-version-string "$BLOXPLOX_APP_VERSION" \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+          echo 'Uploaded to App Store Connect. Processing and TestFlight availability must still be verified.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove signing credentials
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/bloxplox.keychain-db" || true
+          rm -f "$RUNNER_TEMP/bloxplox.p12" "$RUNNER_TEMP/bloxplox.mobileprovision"
+          rm -rf "$RUNNER_TEMP/bloxplox-upload-keys"
+          if [ -n "${BLOXPLOX_PROFILE_UUID:-}" ]; then
+            rm -f "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/$BLOXPLOX_PROFILE_UUID.mobileprovision"
+            rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/$BLOXPLOX_PROFILE_UUID.mobileprovision"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bloxplox-ios-beta
+          path: beta/
+          retention-days: 3

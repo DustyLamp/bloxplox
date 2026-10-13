@@ -37,8 +37,8 @@ until the release is uploaded and available to the intended testing track.
 
 The existing **Build native previews** workflow produces a signed simulator app
 on the public macOS runner. A simulator app cannot be installed on an iPhone.
-TestFlight requires the confirmed Apple team, app identifier `com.bloxplox.app`,
-an App Store Connect app record, distribution signing and upload access. Never
+The selected Xube team and BloxPlox app record are documented below. TestFlight
+still requires distribution signing, upload and successful Apple processing. Never
 reuse another product's private signing keys or credentials without authorization.
 Complete native authentication, gestures, offline recovery and physical-device
 checks before inviting external testers. Sign in with Apple and its revocation
@@ -88,3 +88,44 @@ repository. There is no scheduled native build, paid build service or automatic
 store submission. AWS CodePipeline remains responsible for backend/web releases
 when `main` changes. Deletion adds pay-per-request SQS/Lambda/DynamoDB operations
 and one CloudWatch alarm; it adds no always-running server.
+
+## Xube iOS release setup (13 October 2026)
+
+The user selected the existing **XUBE PTY LTD** membership, team `7H234Q95ZH`.
+BloxPlox's App Store Connect record is `6822319641`, bundle `com.bloxplox.app`.
+The defunct DUSTY LAMP LIMITED team is not used. This choice requires no additional
+Apple membership. Apple transfers require at least one App Store release; a
+TestFlight-only app cannot use the standard transfer process. A future transfer
+also needs new distribution signing and migration of Sign in with Apple users.
+See [Apple's transfer criteria](https://developer.apple.com/help/app-store-connect/transfer-an-app/app-transfer-criteria/).
+
+**Build and upload iOS beta** is a manual, `main`-only workflow on the standard
+public-repository macOS runner. It uses `native-beta` environment secrets:
+
+- `IOS_DISTRIBUTION_P12_BASE64`, `IOS_DISTRIBUTION_PASSWORD`
+- `IOS_PROVISIONING_PROFILE_BASE64`
+- `APP_STORE_CONNECT_PRIVATE_KEY`, `APP_STORE_CONNECT_KEY_ID`,
+  `APP_STORE_CONNECT_ISSUER_ID`
+
+The dedicated BloxPlox upload key has the Developer role. Apple team API keys
+cover all team apps; the user explicitly approved that scope. The workflow is
+restricted to BloxPlox's bundle, team and App Store record. Never use this key to
+operate on other apps. Signing secrets have a separate owner-only local backup
+outside the repository. The runner removes private keys, profiles and its
+throwaway keychain after success or failure. Never include them in artifacts.
+
+The profile validator rejects development, enterprise, ad-hoc, expired,
+wrong-team, wrong-app and mismatched-certificate profiles. Release signing is
+applied only to the app target. Local reminders do not need APNs, so an Expo
+plugin removes the unused push entitlement; Sign in with Apple is enabled in
+the native identifier. Build numbers begin at 1001 and increase per workflow run.
+Re-running an uploaded run reuses its number: dispatch a new run for a new upload.
+
+The optional `upload` input defaults to true. A successful upload still needs
+Apple processing and verification in TestFlight before a beta is available.
+This workflow does not submit the app for public App Store review or release it.
+
+Setup status: the app record, Services ID `com.bloxplox.signin`, and approved
+Developer upload key exist. Distribution certificate/profile and the Apple
+login key are awaiting the separate credential-creation approval. No signed
+iPhone build has been uploaded yet. Apple login remains disabled in production.

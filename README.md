@@ -76,7 +76,7 @@ Native preview builds are manual and do not deploy production:
 gh workflow run native.yml --ref main -f platform=both
 ```
 
-Use `android` or `ios` to build only one platform. The workflow produces an Android APK with development signing and a Release iOS simulator application; artifacts expire after one day. Physical iPhone/TestFlight builds require the Apple Developer team and signing setup. Google and Apple buttons appear only when their provider configuration is active.
+Use `android` or `ios` to build only one platform. The workflow produces an Android APK with development signing and a Release iOS simulator application; artifacts expire after one day. Physical iPhone/TestFlight builds use the manual **Build and upload iOS beta** workflow and the selected Xube Apple team; see [native release setup](docs/mobile-release.md). Google and Apple buttons appear only when their provider configuration is active.
 
 The separate **Build signed Android beta** workflow runs manually on `main` and
 uses private signing material from the `native-beta` GitHub environment. See the

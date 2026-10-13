@@ -11,6 +11,12 @@
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "appleTeamId": "7H234Q95ZH",
+      "entitlements": {
+        "com.apple.developer.applesignin": [
+          "Default"
+        ]
       }
     },
     "android": {
@@ -27,6 +33,7 @@
       ]
     },
     "plugins": [
+      "./plugins/with-local-notifications.cjs",
       "expo-secure-store",
       "expo-sqlite",
       "expo-font",
