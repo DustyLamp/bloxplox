@@ -1,23 +1,22 @@
-# Google Play listing preparation — inactive
+# Google Play listing preparation
 
-**Stopped by the owner on 14 October 2026.** Google Play registration was
-cancelled before the new payments profile was confirmed or linked. No fee was
-paid. Do not resume this setup, change Xube's D-U-N-S record, addresses, business
-identity, payments profiles or company settings, or send further administrative
-support requests. Use the existing BloxPlox TestFlight setup and beta artifacts;
-further work is limited to the app. This boundary supersedes the preparation
-steps below. Existing Xube resources must remain unchanged.
+**Personal-account preparation, 14 October 2026.** The owner authorized working
+toward public release with no administrative changes to existing entities.
+Prepare a new personal publisher; the owner email and enrollment are pending.
+This does not restart the cancelled Xube registration. Do not change Xube's
+D-U-N-S record, addresses, business identity, payments profiles, memberships or
+agreements, or send administrative support requests. Existing entities and their
+resources must remain unchanged. See [mobile release notes](mobile-release.md).
 
 Prepared 14 October 2026 for the existing signed Android beta, package
 `com.bloxplox.app`, version 0.1.0 (1005), revision `f8d9195`. This is a repository
 draft, not a published listing or a completed Play registration.
 
-**Release scope: existing TestFlight and beta only.** The owner explicitly limited
-distribution on 14 October 2026. Use the existing internal TestFlight group;
-the proposed Play track is not being created. Do not start production, open testing,
-pre-registration, public TestFlight links or external tester distribution without
-new instructions. The copy below is preparation for the testing setup, not
-authorization to publish a public listing.
+**Current availability: existing TestFlight and beta artifacts.** The new
+personal Play account needs verification, closed testing and production access
+before public release. The copy below is prepared for that account. No app,
+testing track, store listing or public TestFlight link has been created by this
+preparation, and no tester invitations have been sent.
 
 ## Listing fields
 
@@ -33,11 +32,11 @@ authorization to publish a public listing.
 | Account deletion | https://bloxplox.com/delete-account |
 | App support email | hello@bloxplox.com |
 
-The owner confirmed `hi@xube.io` for Xube's organization-level developer email
-and `hello@bloxplox.com` for BloxPlox app support. The organization-level public
-phone remains unconfirmed. Do not copy the private Apple review contact into
-public developer fields. The app's support links use the BloxPlox address;
-Google OAuth consent retains its separately approved support configuration.
+Use `hello@bloxplox.com` for BloxPlox app support. The new personal publisher's
+identity/contact fields remain dependent on enrollment; do not reuse Xube's
+organization contacts or the private Apple review contact. The app's support
+links use the BloxPlox address. Google OAuth consent retains its separately
+approved support configuration.
 
 ### Short description
 
@@ -73,23 +72,12 @@ from Settings. BloxPlox has no advertising.
 
 ## Publisher boundary
 
-The owner reconfirmed **XUBE PTY LTD** as publisher on 14 October 2026 after
-reviewing the shared developer-account exposure. All actions remain specific
-to BloxPlox. Keep existing Xube apps, credentials, billing, legal identity and
-infrastructure unchanged. Do not reuse or modify the unrelated Mylk Me payments
-profile. A separate profile does not guarantee isolation from related-account
-enforcement.
-
-Google successfully resolved the supplied existing D-U-N-S number to XUBE PTY
-LTD, but returned a different address from the owner's D&B confirmation and the
-Apple membership. The owner confirmed the D&B email's address is current. The
-new profile has **not** been confirmed, no profile has been linked, and no
-registration payment has been made. Do not confirm Google's stale address or
-change Xube's existing company records to match it. The owner stopped further
-address investigation and administrative requests. Google's verification-issues
-link redirected the unregistered account to signup; no case was submitted.
-Keep the supplied email, full identity details and verification screenshots out
-of the public repository.
+The earlier Xube registration stopped before profile confirmation, linking or
+payment. No address update, D-U-N-S change or administrative support request was
+submitted. Do not resume it, confirm the mismatched address or reuse the unrelated
+Mylk Me payments profile. New personal enrollment must not convert or modify
+either existing entity. Keep personal identity documents, addresses, private
+review contacts and verification screenshots out of the public repository.
 
 ## Submission state
 
@@ -97,10 +85,10 @@ The signed APK/AAB and checksums are available in the
 [Android beta release](https://github.com/DustyLamp/bloxplox/releases/tag/android-beta-0.1.0-1005).
 No rebuild is needed just to prepare a listing.
 
-The proposed account setup stopped before identity verification, terms and
-payment. These are not outstanding authorized tasks. Do not create the Play
-app, resume registration, upload a different Xube app or change an existing
-app-signing configuration.
+The old organization setup is cancelled. New personal enrollment still requires
+the account holder's identity verification, terms and payment. Do not select an
+existing organization's payments profile or change an existing app-signing
+configuration. Inspect the final account and package identity before upload.
 
 Store screenshots must show the final retained native design, with only the
 Habits List spacing refinement. Do not use the reverted redesign or personal
@@ -114,6 +102,88 @@ Native physical-device gestures, offline recovery, reminders, Apple private-rela
 delivery and real Apple token revocation retain the verification limits recorded
 in [mobile-release.md](mobile-release.md). An internal beta does not establish
 public-store readiness.
+
+## Data disclosure preparation
+
+This inventory is based on the current source and Android 1005 permission
+report. It is preparation for the store forms, not a submitted declaration or
+an assertion that no user data is collected. Check the final signed binaries,
+SDK behavior and service-provider processing before submitting either store's
+form. Optional calendar consent does not make imported data exempt from disclosure.
+
+| Data | Actual use | Form preparation |
+| --- | --- | --- |
+| Verified email and Cognito/provider account identifiers | Authentication, account linking and separation of planners | Email address and user IDs; linked to the user; account management/app functionality |
+| Blocks, Habits, Things, notes, categories, prerequisites, results and settings | Durable planner records, history and cross-device sync | User-generated content; linked to the user; app functionality |
+| Random persistent installation actor | Stored with field clocks to resolve concurrent edits | Device/other IDs, including Apple's Device ID category; linked through planner records; app functionality, not advertising |
+| Selected Google calendars and events | Optional read-only import of titles, notes, locations, times and recurrence | Calendar data in Play; user content in Apple; linked to the user; app functionality |
+| Connection and Apple deletion-confirmation tokens | Refresh selected calendars or revoke Apple access on deletion | Authentication processing; server-side only; included in the privacy explanation |
+| Server error name/request ID and AWS request metadata | Operating and protecting authentication and sync | Review diagnostics/service-provider processing for the final declarations; application Lambda logs retain 14 days |
+
+Source locations: `packages/auth/src/index.ts`,
+`services/functions/link-identity.ts`, `apps/mobile/src/storage.ts`,
+`packages/sync/src/database.ts`, `services/functions/google.ts`,
+`services/functions/google-store.ts`, `services/functions/apple-deletion.ts`
+and `infrastructure/lib/application-stack.ts`.
+
+The application does not map a social display name into Cognito. It does not
+request phone contacts, photos, microphone, camera, HealthKit, Health Connect or
+device location. The Android 1005 manifest has no camera, microphone, location,
+contacts, calendar-storage or external-storage permissions. Imported calendar
+location text is still stored as part of an event; absence of device-location
+permission is not a claim that events contain no personal information.
+
+Reminders are local notifications scheduled by `apps/mobile/src/reminders.ts`;
+the app does not register an Expo/APNs/FCM push token. Android's notification
+dependencies still contribute receiver and badge permissions to the manifest.
+The SDK review must inspect these dependencies as well as application calls.
+All paid features remain free and no purchase flow is exposed. There is no
+application advertising or analytics SDK configured.
+
+Data travels over HTTPS/WSS and is stored in AWS Stockholm, with local SQLite
+copies for offline use. This is not end-to-end encryption. Account deletion is
+available in Settings and through the public web path; the deletion receipt,
+35-day backup expiry and remaining offline copies are disclosed in the privacy
+page. Do not answer “no collection,” “anonymous,” or “immediate deletion
+everywhere.” Evaluate service-provider sharing exceptions using the actual
+relationships rather than treating all AWS processing as advertising sharing.
+
+Use the current [Google Data safety definitions](https://support.google.com/googleplay/android-developer/answer/10787469?hl=en-GB)
+and [Apple privacy definitions](https://developer.apple.com/app-store/app-privacy-details/)
+when mapping these facts to each store. The final identity of the personal
+operator and any public trader/contact disclosures depend on enrollment; do not
+publish a private address or phone copied from the earlier Xube setup.
+
+## Reviewer access and test sequence
+
+Provide a dedicated verified review account with synthetic planner records in
+the store's private app-access fields. Keep its password out of this repository
+and screenshots. Do not use the owner's account or require a reviewer to wait
+for an email code. Test that login before every submission. A separate disposable
+account is needed for deletion so the main review credentials remain valid.
+
+1. Sign in with the review email/password. Open Blocks, Habits and Things; check
+   that one Grid/List selection applies to all three.
+2. Tap available time to create a one-hour block. Resize and rearrange it, then
+   link a habit and several Things. Split a Thing out into its own time slot.
+3. In Habits List, swipe right for done, right again to clear; swipe left for
+   not done, then left again to clear. Check numeric results and shared history.
+4. Open a Thing's graph, add prerequisites and confirm “Waiting on…” still
+   allows completion. Verify the native controls and bundled graph on a phone.
+5. Edit offline, restart the app, reconnect and compare the same account in a
+   second client. Check concurrent edits and isolation from a second account.
+6. Verify recurrence across day/timezone boundaries and local reminder delivery
+   on physical devices. Simulator/build checks alone do not close these items.
+7. Calendar connection is optional and separate from Google login. Test selection,
+   hiding, overlap layout and merge without changing the source Google event.
+   Record Google's verification status accurately in review notes.
+8. Test email, Google and the new personal-team Apple flow, then deletion and
+   upstream Apple revocation on a disposable identity. Preserve existing users'
+   planner IDs through the Apple publisher transition.
+
+Store screenshots must be captured from the final native release with synthetic
+data. Content rating, audience selection, app access, privacy forms and release
+notes must describe the final binary; none have been submitted by this preparation.
 
 ## References
 
