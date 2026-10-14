@@ -4,8 +4,9 @@
 
 The owner authorized proceeding toward public release with **zero administrative
 disruption to existing entities**. Prepare new individual Apple and personal
-Google Play accounts; the owner email is awaiting selection. Neither account has
-been enrolled or paid for. The existing internal TestFlight setup and beta
+Google Play accounts using **jez@bloxplox.com**, explicitly selected by the owner
+on 14 October 2026. Neither developer account has been enrolled or paid for.
+The existing internal TestFlight setup and beta
 artifacts remain available while this preparation happens.
 
 The old Xube Google Play registration remains stopped. Do not change Xube,
@@ -17,11 +18,31 @@ notes below do not authorize resuming those steps.
 
 ## Personal publisher release path
 
-Use an existing owner-selected email; do not create a paid Workspace mailbox or
-alter aliases, groups or an existing organization to obtain one. Passwords,
+Use the existing **jez@bloxplox.com** email for both personal publisher accounts.
+Keep **hello@bloxplox.com** as the app's public support address. Do not create a
+paid Workspace mailbox or alter aliases, groups or an existing organization.
+Passwords,
 two-factor authentication and identity verification need the account holder.
 Do not convert or close an existing membership. Store registration and payment
 must be visibly for the new personal account before continuing.
+
+### Account setup checkpoint — 14 October 2026
+
+| Item | Selected identity | Verified status |
+| --- | --- | --- |
+| New individual Apple developer membership | `jez@bloxplox.com` | Apple sign-in is at the password step; successful sign-in and membership enrollment are not yet verified |
+| New personal Google Play developer account | `jez@bloxplox.com` | Google reported no account for this address; free personal Google Account signup is awaiting the owner's details/verification |
+| Public app support | `hello@bloxplox.com` | Approved for app/store support; support-link correction is in PR #21 |
+| Existing Google OAuth consent support | `iamjeza@gmail.com` | Previously approved exception; unchanged by the new store-account setup |
+
+The owner was handed both account pages in the approved personal Chrome profile,
+under the “BloxPlox personal accounts” session. For Google signup, choose “Use
+your existing email”; this does not require Gmail or a new Workspace subscription.
+The owner completes passwords, verification and account terms directly. Do not
+record successful creation or enrollment until the result is visibly verified.
+No membership terms, registration fee or payment has been submitted in this step.
+Private handoff screenshots are ignored under `test-results/`; no passwords,
+identity documents or verification codes belong in this repository.
 
 Apple individual enrollment costs US$99/year or the local equivalent and uses
 the individual's legal name as seller; it does not need an organization D-U-N-S

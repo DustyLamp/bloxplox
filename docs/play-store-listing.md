@@ -2,7 +2,8 @@
 
 **Personal-account preparation, 14 October 2026.** The owner authorized working
 toward public release with no administrative changes to existing entities.
-Prepare a new personal publisher; the owner email and enrollment are pending.
+Prepare a new personal publisher using the owner-selected **jez@bloxplox.com**;
+account creation/verification and developer enrollment are pending.
 This does not restart the cancelled Xube registration. Do not change Xube's
 D-U-N-S record, addresses, business identity, payments profiles, memberships or
 agreements, or send administrative support requests. Existing entities and their
@@ -32,8 +33,9 @@ preparation, and no tester invitations have been sent.
 | Account deletion | https://bloxplox.com/delete-account |
 | App support email | hello@bloxplox.com |
 
-Use `hello@bloxplox.com` for BloxPlox app support. The new personal publisher's
-identity/contact fields remain dependent on enrollment; do not reuse Xube's
+Use `hello@bloxplox.com` for BloxPlox app support and `jez@bloxplox.com` to own the
+new personal developer account. Other publisher identity/contact fields remain
+dependent on enrollment; do not reuse Xube's
 organization contacts or the private Apple review contact. The app's support
 links use the BloxPlox address. Google OAuth consent retains its separately
 approved support configuration.
