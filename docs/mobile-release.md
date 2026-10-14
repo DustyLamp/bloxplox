@@ -233,3 +233,11 @@ The approved Apple D-U-N-S lookup returned no match for Xube's saved membership
 address. No duplicate D-U-N-S registration was requested. Google Play remains at
 its organization identity form, awaiting the existing identifier and confirmed
 public contact details. The existing Xube Apple membership is unchanged.
+
+On 14 October the owner supplied the existing D-U-N-S number and reconfirmed
+Xube as publisher. Google resolved the number to XUBE PTY LTD but returned a
+different address from the D&B email and Apple membership. Confirmation is held
+until the owner identifies the current address on company documents; no new
+payments profile is confirmed or linked and no registration fee has been paid.
+The [Play listing draft](play-store-listing.md) records the next steps and the
+boundary protecting existing Xube resources.
