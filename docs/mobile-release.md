@@ -4,8 +4,11 @@
 
 The owner authorized proceeding toward public release with **zero administrative
 disruption to existing entities**. Prepare new individual Apple and personal
-Google Play accounts using **jez@bloxplox.com**, explicitly selected by the owner
-on 14 October 2026. Neither developer account has been enrolled or paid for.
+Google Play accounts. The owner selected **jez@bloxplox.com** on 14 October 2026,
+then confirmed it is already used in Mylk Me's Google Workspace after Google
+rejected new-account signup. Keep that email for Apple; a separate personal
+Google identity remains to be selected. Neither developer account has been
+enrolled or paid for.
 The existing internal TestFlight setup and beta
 artifacts remain available while this preparation happens.
 
@@ -18,11 +21,12 @@ notes below do not authorize resuming those steps.
 
 ## Personal publisher release path
 
-Use the existing **jez@bloxplox.com** email for both personal publisher accounts.
+Use the existing **jez@bloxplox.com** email for the personal Apple account. For
+Google, prepare a separate free personal Gmail account without changing the
+existing Workspace identity. The final Gmail address has not been selected.
 Keep **hello@bloxplox.com** as the app's public support address. Do not create a
 paid Workspace mailbox or alter aliases, groups or an existing organization.
-Passwords,
-two-factor authentication and identity verification need the account holder.
+Passwords, two-factor authentication and identity verification need the account holder.
 Do not convert or close an existing membership. Store registration and payment
 must be visibly for the new personal account before continuing.
 
@@ -31,13 +35,20 @@ must be visibly for the new personal account before continuing.
 | Item | Selected identity | Verified status |
 | --- | --- | --- |
 | New individual Apple developer membership | `jez@bloxplox.com` | Apple sign-in is at the password step; successful sign-in and membership enrollment are not yet verified |
-| New personal Google Play developer account | `jez@bloxplox.com` | Google reported no account for this address; free personal Google Account signup is awaiting the owner's details/verification |
+| New personal Google Play developer account | Separate personal Google/Gmail identity pending | Google sign-in did not find `jez@bloxplox.com`, but signup reported the username is taken. The owner confirmed it is already used in Mylk Me Workspace. Do not alter that Workspace setup to free it |
 | Public app support | `hello@bloxplox.com` | Approved for app/store support; support-link correction is in PR #21 |
 | Existing Google OAuth consent support | `iamjeza@gmail.com` | Previously approved exception; unchanged by the new store-account setup |
 
 The owner was handed both account pages in the approved personal Chrome profile,
-under the “BloxPlox personal accounts” session. For Google signup, choose “Use
-your existing email”; this does not require Gmail or a new Workspace subscription.
+under the “BloxPlox personal accounts” session. The earlier instruction to use
+the Workspace email for a separate Google account is superseded: choose “Get
+a Gmail address instead” for a free, independent personal identity. Do not
+remove aliases, change domain types, reset Workspace credentials or submit an
+administrative request. The screenshot's signup error is not evidence that an
+unrelated person owns the address. Google's [alias documentation](https://support.google.com/a/answer/33327?hl=en-sg)
+explains that Workspace email aliases are not separate Google Accounts and
+cannot be used to sign in; the precise Workspace address configuration has not
+been re-investigated and is not necessary to this separate-account path.
 The owner completes passwords, verification and account terms directly. Do not
 record successful creation or enrollment until the result is visibly verified.
 No membership terms, registration fee or payment has been submitted in this step.

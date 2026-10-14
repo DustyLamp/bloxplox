@@ -52,9 +52,10 @@ The original native design is retained, with tighter Habits List spacing.
 Neither app has been released publicly through the App Store or Google Play.
 
 Public-release preparation uses new personal developer accounts so it requires
-no administrative changes to existing entities. The owner selected
-`jez@bloxplox.com` for both accounts; app support is `hello@bloxplox.com`.
-Enrollment is not complete;
+no administrative changes to existing entities. Apple uses the selected
+`jez@bloxplox.com` email. That address is already used in Mylk Me's Google
+Workspace, so the new personal Google account needs a separate identity.
+App support is `hello@bloxplox.com`. Enrollment is not complete;
 the existing TestFlight beta and Android artifacts remain the available builds.
 The old Xube Google Play registration stays stopped. Do not change Xube's
 D-U-N-S record, addresses, business identity, payments profiles, memberships,
