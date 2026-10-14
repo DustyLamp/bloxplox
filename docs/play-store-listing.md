@@ -4,6 +4,13 @@ Prepared 14 October 2026 for the existing signed Android beta, package
 `com.bloxplox.app`, version 0.1.0 (1005), revision `f8d9195`. This is a repository
 draft, not a published listing or a completed Play registration.
 
+**Release scope: internal testing only.** The owner explicitly limited store
+distribution on 14 October 2026. Use an allowlisted Play Internal testing track
+and the existing internal TestFlight group. Do not start production, open testing,
+pre-registration, public TestFlight links or external tester distribution without
+new instructions. The copy below is preparation for the testing setup, not
+authorization to publish a public listing.
+
 ## Listing fields
 
 | Field | Value |
@@ -18,9 +25,11 @@ draft, not a published listing or a completed Play registration.
 | Account deletion | https://bloxplox.com/delete-account |
 | App support email | hello@bloxplox.com |
 
-The app support address was approved by the owner. The organization-level public
-phone and email are separate fields and still require confirmation. Do not copy
-the private Apple review contact into public developer fields.
+The owner confirmed `hi@xube.io` for Xube's organization-level developer email
+and `hello@bloxplox.com` for BloxPlox app support. The organization-level public
+phone remains unconfirmed. Do not copy the private Apple review contact into
+public developer fields. The app's support links use the BloxPlox address;
+Google OAuth consent retains its separately approved support configuration.
 
 ### Short description
 
@@ -65,10 +74,14 @@ enforcement.
 
 Google successfully resolved the supplied existing D-U-N-S number to XUBE PTY
 LTD, but returned a different address from the owner's D&B confirmation and the
-Apple membership. The new profile has **not** been confirmed, no profile has
-been linked, and no registration payment has been made. Resolve the address
-against current company documents before proceeding. Keep the supplied email,
-full identity details and verification screenshots out of the public repository.
+Apple membership. The owner confirmed the D&B email's address is current. The
+new profile has **not** been confirmed, no profile has been linked, and no
+registration payment has been made. Do not confirm Google's stale address or
+change Xube's existing company records to match it. Check when D&B's update was
+completed and resolve its propagation to Google before proceeding. Google's
+verification-issues link currently redirects the unregistered account to signup.
+Keep the supplied email, full identity details and verification screenshots out
+of the public repository.
 
 ## Submission state
 
@@ -76,7 +89,7 @@ The signed APK/AAB and checksums are available in the
 [Android beta release](https://github.com/DustyLamp/bloxplox/releases/tag/android-beta-0.1.0-1005).
 No rebuild is needed just to prepare a listing.
 
-The next account steps are the address confirmation, public developer contacts,
+The next account steps are the stale-address resolution, public developer phone,
 identity and website verification, registration terms and the one-time fee.
 Then create only the BloxPlox app and prepare its internal testing track. Do not
 upload a different Xube app or change an existing app-signing configuration.
@@ -99,3 +112,5 @@ public-store readiness.
 - [Google's listing fields and character limits](https://support.google.com/googleplay/android-developer/answer/9859152?hl=en): name 30, short description 80, full description 4,000.
 - [Developer identity verification](https://support.google.com/googleplay/android-developer/answer/10841920?hl=en).
 - [Google Play enforcement](https://support.google.com/googleplay/android-developer/answer/9899234?hl=en).
+- [D&B updates and verification issues](https://support.google.com/googleplay/android-developer/answer/13634888?hl=en).
+- [Internal testing visibility](https://support.google.com/googleplay/android-developer/answer/9859751?hl=en_EN).

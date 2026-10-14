@@ -241,3 +241,11 @@ until the owner identifies the current address on company documents; no new
 payments profile is confirmed or linked and no registration fee has been paid.
 The [Play listing draft](play-store-listing.md) records the next steps and the
 boundary protecting existing Xube resources.
+
+The owner subsequently confirmed that the address in the D&B email is current;
+Google's returned address must not be accepted. Xube's developer contact is
+`hi@xube.io`; BloxPlox app support is `hello@bloxplox.com`. The public developer
+phone remains unconfirmed. Store distribution is explicitly **internal testing
+only**: no public store release, open testing, pre-registration, public beta link
+or external TestFlight invitations. Existing web/repository/APK visibility is a
+separate question and has not been changed by this registration work.
