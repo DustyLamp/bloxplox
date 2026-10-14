@@ -51,6 +51,12 @@ build 1005 is available as a [signed beta download](https://github.com/DustyLamp
 The original native design is retained, with tighter Habits List spacing.
 Neither app has been released publicly through the App Store or Google Play.
 
+The current release scope is the existing TestFlight setup and beta artifacts.
+Google Play registration is stopped. Do not change Xube's D-U-N-S record,
+addresses, business identity, payments profiles or company settings, or send
+further administrative requests. Continue app work using the existing setup;
+see the current authorization in [mobile release notes](docs/mobile-release.md).
+
 The `bloxplox-production` CodePipeline watches `main`, tests the application, synthesizes and updates itself, deploys the backend, then publishes a matching build and runtime configuration to Amplify. Merge to `main` to deploy. No manual pipeline approval is required.
 
 The first pipeline deployment requires the account to be bootstrapped and a GitHub source token in Secrets Manager at `bloxplox/github-token`. Never put the token in source or CDK context.

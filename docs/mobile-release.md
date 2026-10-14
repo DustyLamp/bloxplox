@@ -1,5 +1,15 @@
 # Native beta distribution
 
+## Current authorization — 14 October 2026
+
+Use the existing BloxPlox internal TestFlight setup and beta artifacts only.
+The owner stopped Google Play registration and all related administrative work.
+Do not change Xube's D-U-N-S record, addresses, business identity, payments
+profiles or company settings, or submit further administrative support requests.
+The unconfirmed profile was cancelled; no profile was linked and no fee paid.
+Keep existing Xube resources unchanged and focus further work on the app.
+Historical setup notes below do not authorize resuming those steps.
+
 BloxPlox uses React Native/Expo with shared domain, actions, authentication and
 replication packages. Native persistence is SQLite; credentials use Keychain or
 Android Keystore through SecureStore. The prerequisite graph uses the same

@@ -1,12 +1,20 @@
-# Google Play listing preparation
+# Google Play listing preparation — inactive
+
+**Stopped by the owner on 14 October 2026.** Google Play registration was
+cancelled before the new payments profile was confirmed or linked. No fee was
+paid. Do not resume this setup, change Xube's D-U-N-S record, addresses, business
+identity, payments profiles or company settings, or send further administrative
+support requests. Use the existing BloxPlox TestFlight setup and beta artifacts;
+further work is limited to the app. This boundary supersedes the preparation
+steps below. Existing Xube resources must remain unchanged.
 
 Prepared 14 October 2026 for the existing signed Android beta, package
 `com.bloxplox.app`, version 0.1.0 (1005), revision `f8d9195`. This is a repository
 draft, not a published listing or a completed Play registration.
 
-**Release scope: internal testing only.** The owner explicitly limited store
-distribution on 14 October 2026. Use an allowlisted Play Internal testing track
-and the existing internal TestFlight group. Do not start production, open testing,
+**Release scope: existing TestFlight and beta only.** The owner explicitly limited
+distribution on 14 October 2026. Use the existing internal TestFlight group;
+the proposed Play track is not being created. Do not start production, open testing,
 pre-registration, public TestFlight links or external tester distribution without
 new instructions. The copy below is preparation for the testing setup, not
 authorization to publish a public listing.
@@ -77,9 +85,9 @@ LTD, but returned a different address from the owner's D&B confirmation and the
 Apple membership. The owner confirmed the D&B email's address is current. The
 new profile has **not** been confirmed, no profile has been linked, and no
 registration payment has been made. Do not confirm Google's stale address or
-change Xube's existing company records to match it. Check when D&B's update was
-completed and resolve its propagation to Google before proceeding. Google's
-verification-issues link currently redirects the unregistered account to signup.
+change Xube's existing company records to match it. The owner stopped further
+address investigation and administrative requests. Google's verification-issues
+link redirected the unregistered account to signup; no case was submitted.
 Keep the supplied email, full identity details and verification screenshots out
 of the public repository.
 
@@ -89,10 +97,10 @@ The signed APK/AAB and checksums are available in the
 [Android beta release](https://github.com/DustyLamp/bloxplox/releases/tag/android-beta-0.1.0-1005).
 No rebuild is needed just to prepare a listing.
 
-The next account steps are the stale-address resolution, public developer phone,
-identity and website verification, registration terms and the one-time fee.
-Then create only the BloxPlox app and prepare its internal testing track. Do not
-upload a different Xube app or change an existing app-signing configuration.
+The proposed account setup stopped before identity verification, terms and
+payment. These are not outstanding authorized tasks. Do not create the Play
+app, resume registration, upload a different Xube app or change an existing
+app-signing configuration.
 
 Store screenshots must show the final retained native design, with only the
 Habits List spacing refinement. Do not use the reverted redesign or personal
