@@ -1,5 +1,115 @@
 # Native beta distribution
 
+## Current authorization — 14 October 2026
+
+The owner authorized proceeding toward public release with **zero administrative
+disruption to existing entities**. Prepare new individual Apple and personal
+Google Play accounts. The owner selected **jez@bloxplox.com** on 14 October 2026,
+then confirmed it is already used in Mylk Me's Google Workspace after Google
+rejected new-account signup. Keep that email for Apple; a separate personal
+Google identity remains to be selected. Neither developer account has been
+enrolled or paid for.
+The existing internal TestFlight setup and beta
+artifacts remain available while this preparation happens.
+
+The old Xube Google Play registration remains stopped. Do not change Xube,
+Dusty Lamp or Mylk Me company records, D-U-N-S details, addresses, memberships,
+agreements, payments profiles, permissions or existing app credentials. Do not
+submit administrative support requests on their behalf. The unconfirmed Google
+profile was cancelled; no profile was linked and no fee paid. Historical setup
+notes below do not authorize resuming those steps.
+
+## Personal publisher release path
+
+Use the existing **jez@bloxplox.com** email for the personal Apple account. For
+Google, prepare a separate free personal Gmail account without changing the
+existing Workspace identity. The final Gmail address has not been selected.
+Keep **hello@bloxplox.com** as the app's public support address. Do not create a
+paid Workspace mailbox or alter aliases, groups or an existing organization.
+Passwords, two-factor authentication and identity verification need the account holder.
+Do not convert or close an existing membership. Store registration and payment
+must be visibly for the new personal account before continuing.
+
+### Account setup checkpoint — 14 October 2026
+
+| Item | Selected identity | Verified status |
+| --- | --- | --- |
+| New individual Apple developer membership | `jez@bloxplox.com` | Apple sign-in is at the password step; successful sign-in and membership enrollment are not yet verified |
+| New personal Google Play developer account | Separate personal Google/Gmail identity pending | Google sign-in did not find `jez@bloxplox.com`, but signup reported the username is taken. The owner confirmed it is already used in Mylk Me Workspace. Do not alter that Workspace setup to free it |
+| Public app support | `hello@bloxplox.com` | Approved for app/store support; support-link correction is in PR #21 |
+| Existing Google OAuth consent support | `iamjeza@gmail.com` | Previously approved exception; unchanged by the new store-account setup |
+
+The owner was handed both account pages in the approved personal Chrome profile,
+under the “BloxPlox personal accounts” session. The earlier instruction to use
+the Workspace email for a separate Google account is superseded: choose “Get
+a Gmail address instead” for a free, independent personal identity. Do not
+remove aliases, change domain types, reset Workspace credentials or submit an
+administrative request. The screenshot's signup error is not evidence that an
+unrelated person owns the address. Google's [alias documentation](https://support.google.com/a/answer/33327?hl=en-sg)
+explains that Workspace email aliases are not separate Google Accounts and
+cannot be used to sign in; the precise Workspace address configuration has not
+been re-investigated and is not necessary to this separate-account path.
+The owner completes passwords, verification and account terms directly. Do not
+record successful creation or enrollment until the result is visibly verified.
+No membership terms, registration fee or payment has been submitted in this step.
+Private handoff screenshots are ignored under `test-results/`; no passwords,
+identity documents or verification codes belong in this repository.
+
+Apple individual enrollment costs US$99/year or the local equivalent and uses
+the individual's legal name as seller; it does not need an organization D-U-N-S
+number. Google Play registration costs US$25 once. A new personal Play account
+needs a closed test with at least 12 testers opted in continuously for 14 days,
+followed by an application for production access. That is a minimum testing
+period, not a guaranteed launch date. Keep the app free with paid plans disabled.
+Sources: [Apple enrollment](https://developer.apple.com/programs/enroll/),
+[Play registration](https://support.google.com/googleplay/android-developer/answer/6112435?hl=en),
+[Play testing](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en).
+
+### App identity and existing accounts
+
+The current iOS app has only been distributed through TestFlight. Apple's
+[standard transfer criteria](https://developer.apple.com/help/app-store-connect/transfer-an-app/app-transfer-criteria/)
+require at least one public App Store version. Do not publish through Xube just
+to make a transfer possible. Prepare a fresh app under the personal membership,
+with its own bundle identifier, signing material and upload credentials.
+
+The following are current beta targets, not defaults for the new publisher:
+
+| Configuration | Current coupling | Required separation |
+| --- | --- | --- |
+| `apps/mobile/app.json` | Xube team, `com.bloxplox.app`, `bloxplox` URL scheme | A separate iOS target; avoid callback ambiguity if both apps are installed |
+| `scripts/sign-ios.mjs`, `scripts/ios-profile.py` | Hard guards for the existing team and bundle | Keep the guards; introduce and validate the new target after real IDs exist |
+| `.github/workflows/ios-beta.yml` | `native-beta` secrets and Xube app record | A distinct protected environment and explicitly checked personal target |
+| `infrastructure/config.ts` and Apple secret | Existing Apple team and Service ID | Preserve live login until the new auth route and account continuity are verified |
+| Android signed APK/AAB | `com.bloxplox.app`, not uploaded to Play | Register only under the new personal Play account; verify signing/upgrade behavior |
+
+Do not copy Xube's private signing material into the new environment, revoke
+existing credentials, or dispatch the current iOS workflow as a personal build.
+Do not delete or rename the existing Xube app to free a store name. If Apple
+does not permit the same name on the new record, use an available BloxPlox title.
+
+Apple identifiers and private-relay email addresses can differ across teams.
+The existing email-based account linker is not proof that this migration is
+safe. Before any production auth change, verify old and new Apple login,
+matching verified-email login, private-relay users, deletion/revocation and the
+same existing Cognito subject/planner data. A different relay email must never
+silently create a replacement for an existing planner. Keep a working old login
+path until continuity is demonstrated. This work belongs to BloxPlox's backend;
+it must not require changes to another Xube app or membership.
+
+### Submission preparation
+
+The [store listing draft](play-store-listing.md) contains listing copy, a data
+inventory and reviewer steps. No store declarations have been submitted. Use
+synthetic data and the retained native design for screenshots. Complete physical
+device gestures, offline/reconnect, reminders, private-relay delivery and real
+Apple revocation checks before claiming public readiness. Calendar verification
+was still pending at the last check on 14 October.
+
+New-account creation, signing and store submission remain dependent on the
+account holder's enrollment. No membership purchase, build upload, transfer,
+public release or new tester invitation was performed during this preparation.
+
 BloxPlox uses React Native/Expo with shared domain, actions, authentication and
 replication packages. Native persistence is SQLite; credentials use Keychain or
 Android Keystore through SecureStore. The prerequisite graph uses the same
@@ -229,7 +339,10 @@ backend with the global Grid preference. The disposable account and its records
 were removed after testing. Physical-device gestures, native offline recovery,
 reminders, private-relay delivery and real Apple revocation remain beta checks.
 
-The approved Apple D-U-N-S lookup returned no match for Xube's saved membership
-address. No duplicate D-U-N-S registration was requested. Google Play remains at
-its organization identity form, awaiting the existing identifier and confirmed
-public contact details. The existing Xube Apple membership is unchanged.
+The earlier Xube Google Play registration was cancelled before confirming or
+linking a payments profile or paying a fee. Google returned a different address
+from the supplied D&B record; the owner stopped all address investigation and
+administrative requests. No duplicate D-U-N-S registration, company-record
+change or support case was submitted. Do not resume that path. The current
+personal-account preparation at the top of this document supersedes the earlier
+publisher selection; it does not change existing TestFlight, web or APK access.
